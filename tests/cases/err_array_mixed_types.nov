@@ -1,0 +1,8 @@
+// error: array element 2 has type float, expected int
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let a = [1, 2.0];
+    return 0;
+}

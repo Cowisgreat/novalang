@@ -1,0 +1,6 @@
+// expect: inf
+fn main() -> int {
+    let z = 0.0;
+    print(1.0 / z);
+    return 0;
+}

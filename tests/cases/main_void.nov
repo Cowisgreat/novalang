@@ -1,0 +1,4 @@
+// expect: void main
+fn main() {
+    print("void main");
+}

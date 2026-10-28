@@ -1,0 +1,5 @@
+// error: unknown escape sequence
+fn main() -> int {
+    print("\q");
+    return 0;
+}

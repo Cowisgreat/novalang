@@ -1,0 +1,6 @@
+// error: :4:5: error: cannot assign to immutable
+fn main() -> int {
+    let x = 1;
+    x = 2;
+    return 0;
+}

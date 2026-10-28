@@ -1,0 +1,7 @@
+// expect: 2.5
+fn main() -> int {
+    var f = 1.0;
+    f = f * 2.5;
+    print(f);
+    return 0;
+}

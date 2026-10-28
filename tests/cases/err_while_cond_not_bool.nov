@@ -1,0 +1,5 @@
+// error: while condition must be bool, got int
+fn main() -> int {
+    while 0 { }
+    return 0;
+}

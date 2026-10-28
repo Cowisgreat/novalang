@@ -1,0 +1,9 @@
+// expect: before
+// runtime-error: out of bounds
+fn main() -> int {
+    print("before");
+    let a = [1];
+    print(a[1]);
+    print("after");
+    return 0;
+}

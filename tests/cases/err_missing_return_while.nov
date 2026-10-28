@@ -1,0 +1,8 @@
+// error: may finish without returning
+fn f() -> int {
+    while true { return 1; }
+}
+fn main() -> int {
+    
+    return 0;
+}

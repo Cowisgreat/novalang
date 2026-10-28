@@ -1,0 +1,6 @@
+// expect: ok
+fn main() -> int {
+    while false { print("never"); }
+    print("ok");
+    return 0;
+}

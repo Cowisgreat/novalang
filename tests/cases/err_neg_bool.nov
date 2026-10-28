@@ -1,0 +1,5 @@
+// error: unary '-' requires int or float, got bool
+fn main() -> int {
+    print(-true);
+    return 0;
+}

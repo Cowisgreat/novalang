@@ -1,0 +1,12 @@
+// expect: mid
+fn main() -> int {
+    let x = 15;
+    if x < 10 {
+        print("low");
+    } else if x < 20 {
+        print("mid");
+    } else {
+        print("high");
+    }
+    return 0;
+}

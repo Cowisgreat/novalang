@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm-18-dev flex bison cmake
+
+      - name: Configure
+        run: cmake -S . -B build -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Run language tests (-O0)
+        run: python3 tests/run_tests.py build/novac tests/cases
+
+      - name: Run language tests (-O2)
+        run: NOVAC_FLAGS=-O2 python3 tests/run_tests.py build/novac tests/cases
+
+      - name: Compile examples
+        run: |
+          for f in examples/*.nov; do
+            ./build/novac "$f" -O2 -o "build/$(basename "$f" .nov).out"
+            "./build/$(basename "$f" .nov).out"
+          done

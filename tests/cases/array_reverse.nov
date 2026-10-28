@@ -1,0 +1,11 @@
+// expect: [5, 4, 3, 2, 1]
+fn reverse(xs: [int]) -> [int] {
+    let n = len(xs);
+    var out = [0; n];
+    for i in 0..n { out[i] = xs[n - 1 - i]; }
+    return out;
+}
+fn main() -> int {
+    print(reverse([1, 2, 3, 4, 5]));
+    return 0;
+}

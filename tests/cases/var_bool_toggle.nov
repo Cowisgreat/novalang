@@ -1,0 +1,7 @@
+// expect: false
+fn main() -> int {
+    var b = true;
+    b = !b;
+    print(b);
+    return 0;
+}

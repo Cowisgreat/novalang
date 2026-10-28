@@ -1,0 +1,6 @@
+// expect: 1
+// exit: 7
+fn main() -> int {
+    print(1);
+    return 7;
+}

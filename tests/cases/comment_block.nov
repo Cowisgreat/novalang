@@ -1,0 +1,6 @@
+// expect: 2
+fn main() -> int {
+    /* block
+       comment */ print(2);
+    return 0;
+}

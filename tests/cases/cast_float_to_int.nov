@@ -1,0 +1,7 @@
+// expect: 3
+// expect: -3
+fn main() -> int {
+    print(3.99 as int);
+    print(-3.99 as int);
+    return 0;
+}

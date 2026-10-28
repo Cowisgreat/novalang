@@ -1,0 +1,8 @@
+// error: operator '+' cannot be applied to float<m> and float<s> (units do not match)
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(1.0<m> + 1.0<s>);
+    return 0;
+}

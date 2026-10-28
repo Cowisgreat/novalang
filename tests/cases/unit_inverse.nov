@@ -1,0 +1,8 @@
+// expect: 0.25 1/s
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(1.0 / 4.0<s>);
+    return 0;
+}

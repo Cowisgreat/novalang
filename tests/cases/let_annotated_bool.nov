@@ -1,0 +1,6 @@
+// expect: false
+fn main() -> int {
+    let b: bool = false;
+    print(b);
+    return 0;
+}

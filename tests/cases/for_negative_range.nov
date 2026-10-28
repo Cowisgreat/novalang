@@ -1,0 +1,7 @@
+// expect: -2
+// expect: -1
+// expect: 0
+fn main() -> int {
+    for i in -2..1 { print(i); }
+    return 0;
+}

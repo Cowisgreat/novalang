@@ -1,0 +1,43 @@
+// Units of measure: the compiler tracks physical dimensions, so mixing up
+// meters and seconds is a compile-time error rather than a silent bug.
+unit m;
+unit s;
+unit kg;
+unit N = <kg*m/s^2>;
+unit J = <N*m>;
+
+fn kinetic_energy(mass: float<kg>, v: float<m/s>) -> float<J> {
+    return 0.5 * mass * v * v;
+}
+
+// Time for an object to fall `h` meters from rest, via Newton's method for sqrt.
+fn fall_time(h: float<m>, g: float<m/s^2>) -> float<s> {
+    let t2 = 2.0 * h / g;           // float<s^2>
+    var t = 1.0<s>;
+    for i in 0..30 {
+        t = (t + t2 / t) / 2.0;
+    }
+    return t;
+}
+
+fn main() {
+    let g = 9.81<m/s^2>;
+    let mass = 70.0<kg>;
+
+    let t = fall_time(20.0<m>, g);
+    print("fall time from 20 m:");
+    print(t);
+
+    let impact = g * t;             // inferred as float<m/s>
+    print("impact speed:");
+    print(impact);
+
+    print("kinetic energy at impact:");
+    kinetic_energy(mass, impact) |> print;
+
+    print("weight:");
+    let w: float<N> = mass * g;
+    print(w);
+
+    // let oops = t + impact;   // error: operator '+' cannot be applied to float<s> and float<m/s>
+}

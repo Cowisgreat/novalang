@@ -1,0 +1,8 @@
+// error: 'len' expects an array, got int
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(len(5));
+    return 0;
+}

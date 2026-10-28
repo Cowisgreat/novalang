@@ -1,0 +1,6 @@
+// expect: 4
+fn show(x: int) -> void { print(x); }
+fn main() -> int {
+    show(4);
+    return 0;
+}

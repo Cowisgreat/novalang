@@ -1,0 +1,11 @@
+// expect: on
+// expect: off
+fn label(b: bool) -> string {
+    if b { return "on"; }
+    return "off";
+}
+fn main() -> int {
+    print(label(true));
+    print(label(false));
+    return 0;
+}

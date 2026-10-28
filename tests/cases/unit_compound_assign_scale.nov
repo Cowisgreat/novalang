@@ -1,0 +1,11 @@
+// expect: 7 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    var d = 2.0<m>;
+    d *= 3.0;
+    d += 1.0<m>;
+    print(d);
+    return 0;
+}

@@ -1,0 +1,6 @@
+// expect: typed
+fn main() -> int {
+    let s: string = "typed";
+    print(s);
+    return 0;
+}

@@ -1,0 +1,12 @@
+// expect: 19.6 kg*m/s^2
+unit m;
+unit s;
+unit kg;
+unit N = <kg*m/s^2>;
+fn main() -> int {
+    let mass = 2.0<kg>;
+    let acc = 9.8<m/s^2>;
+    let f: float<N> = mass * acc;
+    print(f);
+    return 0;
+}

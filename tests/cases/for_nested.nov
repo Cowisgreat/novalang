@@ -1,0 +1,11 @@
+// expect: 20
+fn main() -> int {
+    var count = 0;
+    for i in 0..4 {
+        for j in 0..5 {
+            count = count + 1;
+        }
+    }
+    print(count);
+    return 0;
+}

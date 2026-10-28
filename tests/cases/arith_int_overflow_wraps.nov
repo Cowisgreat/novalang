@@ -1,0 +1,6 @@
+// expect: -9223372036854775808
+fn main() -> int {
+    let max = 9223372036854775807;
+    print(max + 1);
+    return 0;
+}

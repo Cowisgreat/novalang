@@ -1,0 +1,6 @@
+// error: parameter 'x' cannot have type void
+fn f(x: void) {}
+fn main() -> int {
+    
+    return 0;
+}

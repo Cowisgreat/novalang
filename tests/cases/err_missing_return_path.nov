@@ -1,0 +1,8 @@
+// error: function 'f' may finish without returning a value of type int
+fn f(x: int) -> int {
+    if x > 0 { return 1; }
+}
+fn main() -> int {
+    
+    return 0;
+}

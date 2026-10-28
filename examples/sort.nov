@@ -1,0 +1,39 @@
+// Arrays, var parameters, the pipeline operator and bounds-checked indexing.
+fn insertion_sort(var xs: [int]) {
+    for i in 1..len(xs) {
+        let key = xs[i];
+        var j = i - 1;
+        while j >= 0 && xs[j] > key {
+            xs[j + 1] = xs[j];
+            j -= 1;
+        }
+        xs[j + 1] = key;
+    }
+}
+
+fn sum(xs: [int]) -> int {
+    var total = 0;
+    for x in xs {
+        total += x;
+    }
+    return total;
+}
+
+fn squares(n: int) -> [int] {
+    var out = [0; n];
+    for i in 0..n {
+        out[i] = i * i;
+    }
+    return out;
+}
+
+fn main() -> int {
+    var data = [42, 7, 19, 3, 88, 23, 1];
+    insertion_sort(data);
+    print(data);
+
+    10 |> squares |> sum |> print;   // 285
+
+    // print(data[len(data)]);       // runtime error at sort.nov:..: index 7 out of bounds for array of length 7
+    return 0;
+}

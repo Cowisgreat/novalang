@@ -1,0 +1,11 @@
+// expect: 2
+// expect: 3
+// expect: 4
+// expect: 5
+fn main() -> int {
+    let n = 3;
+    for i in n - 1..n * 2 {
+        print(i);
+    }
+    return 0;
+}

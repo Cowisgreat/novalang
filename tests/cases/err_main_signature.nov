@@ -1,0 +1,2 @@
+// error: 'main' must take no parameters and return int or void
+fn main(x: int) -> int { return x; }

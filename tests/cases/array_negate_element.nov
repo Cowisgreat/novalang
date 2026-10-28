@@ -1,0 +1,6 @@
+// expect: -4
+fn main() -> int {
+    let a = [4];
+    print(-a[0]);
+    return 0;
+}

@@ -1,0 +1,8 @@
+// error: can only iterate over an array or a range, got int
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    for x in 5 { }
+    return 0;
+}

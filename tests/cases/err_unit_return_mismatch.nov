@@ -1,0 +1,6 @@
+// error: returning float<m*s> from a function declared to return float<m/s>
+unit m;
+unit s;
+unit kg;
+fn f(d: float<m>, t: float<s>) -> float<m/s> { return d * t; }
+fn main() -> int { return 0; }

@@ -1,0 +1,9 @@
+// error: operator '+' cannot be applied to int and float
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    var x = 1;
+    x += 1.0;
+    return 0;
+}

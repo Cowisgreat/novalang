@@ -1,0 +1,8 @@
+// expect: 2 s
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(17<s> % 5<s>);
+    return 0;
+}

@@ -1,0 +1,6 @@
+// expect: 7
+fn area(w: float, h: float) -> float { return w * h; }
+fn main() -> int {
+    print(area(2.0, 3.5));
+    return 0;
+}

@@ -1,0 +1,33 @@
+// Counts how many points of a 60x30 grid lie inside the Mandelbrot set,
+// exercising float math, casts, nested loops and early exits.
+fn escapes(cr: float, ci: float) -> bool {
+    var zr = 0.0;
+    var zi = 0.0;
+    for i in 0..200 {
+        let nr = zr * zr - zi * zi + cr;
+        zi = 2.0 * zr * zi + ci;
+        zr = nr;
+        if zr * zr + zi * zi > 4.0 {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn main() -> int {
+    var inside = 0;
+    for y in 0..30 {
+        for x in 0..60 {
+            let cr = -2.0 + (x as float) * 3.0 / 60.0;
+            let ci = -1.2 + (y as float) * 2.4 / 30.0;
+            if !escapes(cr, ci) {
+                inside = inside + 1;
+            }
+        }
+    }
+    print("points inside the set:");
+    print(inside);
+    let ratio = inside as float / 1800.0;
+    print(ratio);
+    return 0;
+}

@@ -1,0 +1,11 @@
+// expect: 4.5
+// expect: 0
+fn scale(n: int, f: float, enabled: bool) -> float {
+    if enabled { return n as float * f; }
+    return 0.0;
+}
+fn main() -> int {
+    print(scale(3, 1.5, true));
+    print(scale(3, 1.5, false));
+    return 0;
+}

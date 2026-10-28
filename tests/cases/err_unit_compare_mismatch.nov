@@ -1,0 +1,8 @@
+// error: operator '<' cannot be applied to int<m> and int<s>
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(1<m> < 1<s>);
+    return 0;
+}

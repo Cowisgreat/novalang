@@ -1,0 +1,8 @@
+// error: operator '==' cannot be applied to [int] and [int]
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print([1] == [1]);
+    return 0;
+}

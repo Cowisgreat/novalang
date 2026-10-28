@@ -1,0 +1,10 @@
+// expect: 10
+fn sum(xs: [int]) -> int {
+    var s = 0;
+    for x in xs { s += x; }
+    return s;
+}
+fn main() -> int {
+    print(sum([1, 2, 3, 4]));
+    return 0;
+}

@@ -1,0 +1,5 @@
+// expect: hello, nova
+fn main() -> int {
+    print("hello, nova");
+    return 0;
+}

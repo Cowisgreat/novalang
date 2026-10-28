@@ -1,0 +1,5 @@
+// error: syntax error
+fn main() -> int {
+    let = 5;
+    return 0;
+}

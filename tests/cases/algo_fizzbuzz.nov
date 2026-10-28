@@ -1,0 +1,24 @@
+// expect: 1
+// expect: 2
+// expect: Fizz
+// expect: 4
+// expect: Buzz
+// expect: Fizz
+// expect: 7
+// expect: 8
+// expect: Fizz
+// expect: Buzz
+// expect: 11
+// expect: Fizz
+// expect: 13
+// expect: 14
+// expect: FizzBuzz
+fn main() -> int {
+    for i in 1..16 {
+        if i % 15 == 0 { print("FizzBuzz"); }
+        else if i % 3 == 0 { print("Fizz"); }
+        else if i % 5 == 0 { print("Buzz"); }
+        else { print(i); }
+    }
+    return 0;
+}

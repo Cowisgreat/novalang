@@ -1,0 +1,5 @@
+// expect: 0.75
+fn main() -> int {
+    print(0.5 + 0.25);
+    return 0;
+}

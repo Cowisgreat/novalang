@@ -1,0 +1,6 @@
+// runtime-error: negative array length -2
+fn main() -> int {
+    let n = -2;
+    let a = [0; n];
+    return 0;
+}

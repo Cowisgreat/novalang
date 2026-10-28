@@ -1,0 +1,5 @@
+// error: operator '+' cannot be applied to bool and bool
+fn main() -> int {
+    print(true + false);
+    return 0;
+}

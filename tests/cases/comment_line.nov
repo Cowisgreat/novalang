@@ -1,0 +1,6 @@
+// expect: 1
+fn main() -> int {
+    // nothing here
+    print(1); // trailing
+    return 0;
+}

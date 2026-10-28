@@ -1,0 +1,7 @@
+// expect: false
+// expect: true
+fn main() -> int {
+    print(!true);
+    print(!false);
+    return 0;
+}

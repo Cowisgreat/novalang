@@ -1,0 +1,10 @@
+// expect: 3
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let a = 6.0<m>;
+    let b = 2.0<m>;
+    print(a / b);
+    return 0;
+}

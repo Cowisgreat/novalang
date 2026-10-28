@@ -1,0 +1,5 @@
+// expect: yes
+fn main() -> int {
+    if true { print("yes"); }
+    return 0;
+}

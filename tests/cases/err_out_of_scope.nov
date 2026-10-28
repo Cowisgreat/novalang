@@ -1,0 +1,8 @@
+// error: use of undeclared variable 'inner'
+fn main() -> int {
+    {
+        let inner = 1;
+    }
+    print(inner);
+    return 0;
+}

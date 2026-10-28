@@ -1,0 +1,9 @@
+// error: cannot index into a value of type int
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let x = 5;
+    print(x[0]);
+    return 0;
+}

@@ -1,0 +1,6 @@
+// expect: inferred
+fn main() -> int {
+    let s = "inferred";
+    print(s);
+    return 0;
+}

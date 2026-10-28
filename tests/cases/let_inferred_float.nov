@@ -1,0 +1,6 @@
+// expect: 1.25
+fn main() -> int {
+    let x = 1.25;
+    print(x);
+    return 0;
+}

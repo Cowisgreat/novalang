@@ -1,0 +1,10 @@
+// expect: 5
+fn check(x: int) {
+    if x < 0 { return; }
+    print(x);
+}
+fn main() -> int {
+    check(-1);
+    check(5);
+    return 0;
+}

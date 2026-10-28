@@ -1,0 +1,10 @@
+// expect: 10 kg*m/s^2
+unit m;
+unit s;
+unit kg;
+unit N = <kg*m/s^2>;
+fn main() -> int {
+    let f = 10.0<N>;
+    print(f);
+    return 0;
+}

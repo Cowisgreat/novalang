@@ -1,0 +1,5 @@
+// expect: -2
+fn main() -> int {
+    print(-17 % 5);
+    return 0;
+}

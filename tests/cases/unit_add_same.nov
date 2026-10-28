@@ -1,0 +1,10 @@
+// expect: 7.5 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let a = 3.0<m>;
+    let b = 4.5<m>;
+    print(a + b);
+    return 0;
+}

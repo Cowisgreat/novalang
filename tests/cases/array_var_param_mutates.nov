@@ -1,0 +1,18 @@
+// expect: [1, 2, 3]
+fn sort(var xs: [int]) {
+    for i in 0..len(xs) {
+        for j in 0..len(xs) - 1 - i {
+            if xs[j] > xs[j + 1] {
+                let tmp = xs[j];
+                xs[j] = xs[j + 1];
+                xs[j + 1] = tmp;
+            }
+        }
+    }
+}
+fn main() -> int {
+    var a = [3, 1, 2];
+    sort(a);
+    print(a);
+    return 0;
+}

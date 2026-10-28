@@ -1,0 +1,8 @@
+// expect: lang
+// expect: [nova, lang]
+fn main() -> int {
+    let words = ["nova", "lang"];
+    print(words[1]);
+    print(words);
+    return 0;
+}

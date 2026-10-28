@@ -1,0 +1,6 @@
+// error: cannot assign a value of type bool to 'x' of type int
+fn main() -> int {
+    var x = 1;
+    x = true;
+    return 0;
+}

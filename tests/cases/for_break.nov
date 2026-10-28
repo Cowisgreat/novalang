@@ -1,0 +1,9 @@
+// expect: 0
+// expect: 1
+fn main() -> int {
+    for i in 0..100 {
+        if i == 2 { break; }
+        print(i);
+    }
+    return 0;
+}

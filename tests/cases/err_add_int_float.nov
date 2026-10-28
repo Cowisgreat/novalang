@@ -1,0 +1,5 @@
+// error: operator '+' cannot be applied to int and float
+fn main() -> int {
+    print(1 + 2.0);
+    return 0;
+}

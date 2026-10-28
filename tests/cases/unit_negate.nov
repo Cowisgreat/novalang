@@ -1,0 +1,8 @@
+// expect: -2 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(-2.0<m>);
+    return 0;
+}

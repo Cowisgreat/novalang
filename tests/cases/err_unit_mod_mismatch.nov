@@ -1,0 +1,8 @@
+// error: operator '%' cannot be applied to int<m> and int<s>
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(5<m> % 2<s>);
+    return 0;
+}

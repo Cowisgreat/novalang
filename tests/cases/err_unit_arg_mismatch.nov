@@ -1,0 +1,9 @@
+// error: argument 1 of 'f' expects float<s>, got float<m>
+unit m;
+unit s;
+unit kg;
+fn f(t: float<s>) -> float<s> { return t; }
+fn main() -> int {
+    print(f(3.0<m>));
+    return 0;
+}

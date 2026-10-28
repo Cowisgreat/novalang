@@ -1,0 +1,7 @@
+// error: redefinition of function 'f'
+fn f() {}
+fn f() {}
+fn main() -> int {
+    
+    return 0;
+}

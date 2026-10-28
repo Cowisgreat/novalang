@@ -1,0 +1,6 @@
+// expect: line1
+// expect: line2
+fn main() -> int {
+    print("line1\nline2");
+    return 0;
+}

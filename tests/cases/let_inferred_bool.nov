@@ -1,0 +1,6 @@
+// expect: true
+fn main() -> int {
+    let ok = 3 > 2;
+    print(ok);
+    return 0;
+}

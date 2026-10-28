@@ -1,0 +1,7 @@
+// runtime-error: index -1 out of bounds
+fn main() -> int {
+    let a = [1, 2, 3];
+    let i = -1;
+    print(a[i]);
+    return 0;
+}

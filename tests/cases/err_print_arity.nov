@@ -1,0 +1,5 @@
+// error: 'print' expects exactly 1 argument, got 2
+fn main() -> int {
+    print(1, 2);
+    return 0;
+}

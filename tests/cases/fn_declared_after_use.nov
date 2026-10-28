@@ -1,0 +1,6 @@
+// expect: 9
+fn main() -> int {
+    print(square(3));
+    return 0;
+}
+fn square(x: int) -> int { return x * x; }

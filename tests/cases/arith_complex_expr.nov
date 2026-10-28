@@ -1,0 +1,7 @@
+// expect: 25
+fn main() -> int {
+    let a = 3;
+    let b = 4;
+    print(a * a + b * b);
+    return 0;
+}

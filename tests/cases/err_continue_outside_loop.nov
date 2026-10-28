@@ -1,0 +1,5 @@
+// error: 'continue' outside of a loop
+fn main() -> int {
+    continue;
+    return 0;
+}

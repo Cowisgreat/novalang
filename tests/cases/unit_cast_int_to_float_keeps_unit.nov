@@ -1,0 +1,9 @@
+// expect: 1.5 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let n = 3<m>;
+    print(n as float<m> / 2.0);
+    return 0;
+}

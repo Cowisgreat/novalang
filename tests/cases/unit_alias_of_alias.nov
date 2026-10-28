@@ -1,0 +1,10 @@
+// expect: 1 kg*m^2/s^2
+unit m;
+unit s;
+unit kg;
+unit N = <kg*m/s^2>;
+unit J = <N*m>;
+fn main() -> int {
+    print(1.0<J>);
+    return 0;
+}

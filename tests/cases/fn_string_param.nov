@@ -1,0 +1,6 @@
+// expect: passed through
+fn echo(s: string) { print(s); }
+fn main() -> int {
+    echo("passed through");
+    return 0;
+}

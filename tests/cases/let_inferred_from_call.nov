@@ -1,0 +1,7 @@
+// expect: 42
+fn twice(n: int) -> int { return n * 2; }
+fn main() -> int {
+    let x = twice(21);
+    print(x);
+    return 0;
+}

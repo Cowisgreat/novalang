@@ -1,0 +1,14 @@
+// expect: 35
+fn digits(n: int) -> int {
+    var x = n;
+    var s = 0;
+    while x > 0 {
+        s = s + x % 10;
+        x = x / 10;
+    }
+    return s;
+}
+fn main() -> int {
+    print(digits(98765));
+    return 0;
+}

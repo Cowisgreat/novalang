@@ -1,0 +1,11 @@
+// expect: 10 m
+// expect: 5 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let d = 2.5<m>;
+    print(d * 4.0);
+    print(2.0 * d);
+    return 0;
+}

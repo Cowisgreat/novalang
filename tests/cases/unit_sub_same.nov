@@ -1,0 +1,8 @@
+// expect: 7 kg
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(10<kg> - 3<kg>);
+    return 0;
+}

@@ -1,0 +1,6 @@
+// expect: 3.5
+fn main() -> int {
+    let x = 7;
+    print(x as float / 2.0);
+    return 0;
+}

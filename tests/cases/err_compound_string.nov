@@ -1,0 +1,9 @@
+// error: operator '+' cannot be applied to string and string
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    var s = "a";
+    s += "b";
+    return 0;
+}

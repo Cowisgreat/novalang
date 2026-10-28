@@ -1,0 +1,6 @@
+// expect: [0, 0, 0, 0, 0]
+fn main() -> int {
+    let z = [0; 5];
+    print(z);
+    return 0;
+}

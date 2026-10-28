@@ -1,0 +1,5 @@
+// expect: 42
+fn main() -> int {
+    print(6 * 7);
+    return 0;
+}

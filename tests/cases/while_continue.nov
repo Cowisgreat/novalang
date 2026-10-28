@@ -1,0 +1,12 @@
+// expect: 1
+// expect: 3
+// expect: 5
+fn main() -> int {
+    var i = 0;
+    while i < 6 {
+        i = i + 1;
+        if i % 2 == 0 { continue; }
+        print(i);
+    }
+    return 0;
+}

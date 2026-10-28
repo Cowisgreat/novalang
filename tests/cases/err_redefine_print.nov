@@ -1,0 +1,6 @@
+// error: 'print' is a builtin and cannot be redefined
+fn print(x: int) {}
+fn main() -> int {
+    
+    return 0;
+}

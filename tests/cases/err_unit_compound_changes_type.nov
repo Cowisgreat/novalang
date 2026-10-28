@@ -1,0 +1,9 @@
+// error: '*=' would change the type of 'd' from float<m> to float<m^2>
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    var d = 2.0<m>;
+    d *= 2.0<m>;
+    return 0;
+}

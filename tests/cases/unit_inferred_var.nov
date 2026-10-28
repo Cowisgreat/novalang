@@ -1,0 +1,10 @@
+// expect: 1.5 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    var x = 0.0<m>;
+    x = x + 1.5<m>;
+    print(x);
+    return 0;
+}

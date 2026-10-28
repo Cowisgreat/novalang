@@ -1,0 +1,10 @@
+// expect: 55
+fn sum_to(n: int) -> int {
+    var s = 0;
+    for i in 1..n + 1 { s = s + i; }
+    return s;
+}
+fn main() -> int {
+    print(sum_to(10));
+    return 0;
+}

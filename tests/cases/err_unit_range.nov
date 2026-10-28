@@ -1,0 +1,8 @@
+// error: range start must be int, got int<m>
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    for i in 0<m>..3<m> { }
+    return 0;
+}

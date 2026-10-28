@@ -1,0 +1,4 @@
+// error: redefinition of unit 'm'
+unit m;
+unit m;
+fn main() {}

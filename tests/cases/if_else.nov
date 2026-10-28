@@ -1,0 +1,6 @@
+// expect: small
+fn main() -> int {
+    let x = 3;
+    if x > 5 { print("big"); } else { print("small"); }
+    return 0;
+}

@@ -1,0 +1,6 @@
+// expect: true
+fn main() -> int {
+    let a = 5;
+    print((a > 0 && a < 10) || a == 100);
+    return 0;
+}

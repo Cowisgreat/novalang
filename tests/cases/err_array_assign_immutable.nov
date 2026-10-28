@@ -1,0 +1,9 @@
+// error: cannot assign to immutable variable 'a'
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let a = [1, 2];
+    a[0] = 5;
+    return 0;
+}

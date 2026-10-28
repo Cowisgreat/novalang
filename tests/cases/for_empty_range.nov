@@ -1,0 +1,6 @@
+// expect: empty
+fn main() -> int {
+    for i in 5..5 { print(i); }
+    print("empty");
+    return 0;
+}

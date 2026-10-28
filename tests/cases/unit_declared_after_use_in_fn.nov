@@ -1,0 +1,6 @@
+// expect: 4 m
+fn main() -> int {
+    print(2<m> * 2);
+    return 0;
+}
+unit m;

@@ -1,0 +1,8 @@
+// error: array length must be int, got float
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let a = [0; 2.0];
+    return 0;
+}

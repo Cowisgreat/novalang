@@ -1,0 +1,9 @@
+// expect: 7.5
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let d = 7.5<m>;
+    print(d as float);
+    return 0;
+}

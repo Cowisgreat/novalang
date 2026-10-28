@@ -1,0 +1,5 @@
+// error: integer literal out of range
+fn main() -> int {
+    print(99999999999999999999);
+    return 0;
+}

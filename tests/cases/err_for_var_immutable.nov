@@ -1,0 +1,5 @@
+// error: cannot assign to immutable variable 'i'
+fn main() -> int {
+    for i in 0..3 { i = 5; }
+    return 0;
+}

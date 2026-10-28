@@ -1,0 +1,10 @@
+// expect: 10.4384 m/s
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let d = 100.0<m>;
+    let t = 9.58<s>;
+    print(d / t);
+    return 0;
+}

@@ -1,0 +1,8 @@
+// expect: true
+// expect: false
+fn is_even(n: int) -> bool { return n % 2 == 0; }
+fn main() -> int {
+    print(is_even(10));
+    print(is_even(7));
+    return 0;
+}

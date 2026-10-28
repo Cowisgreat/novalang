@@ -1,0 +1,7 @@
+// expect: evaluated
+// expect: true
+fn side_effect() -> bool { print("evaluated"); return true; }
+fn main() -> int {
+    print(true && side_effect());
+    return 0;
+}

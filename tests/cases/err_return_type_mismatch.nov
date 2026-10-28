@@ -1,0 +1,6 @@
+// error: returning float from a function declared to return int
+fn f() -> int { return 1.5; }
+fn main() -> int {
+    
+    return 0;
+}

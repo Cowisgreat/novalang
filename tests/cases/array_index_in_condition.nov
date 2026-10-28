@@ -1,0 +1,6 @@
+// expect: ordered
+fn main() -> int {
+    let a = [5, 10];
+    if a[0] < a[1] { print("ordered"); }
+    return 0;
+}

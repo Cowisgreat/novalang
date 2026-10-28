@@ -1,0 +1,9 @@
+// expect: 4
+// expect: 9
+fn printf(x: int) -> int { return x * 2; }
+fn puts(x: int) -> int { return x * x; }
+fn main() -> int {
+    print(printf(2));
+    print(puts(3));
+    return 0;
+}

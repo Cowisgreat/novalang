@@ -1,0 +1,10 @@
+// expect: 12 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let v = 3.0<m/s>;
+    let t = 4.0<s>;
+    print(v * t);
+    return 0;
+}

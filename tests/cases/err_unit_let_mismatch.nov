@@ -1,0 +1,8 @@
+// error: cannot initialize 'v' of type float<m/s> with a value of type float<m>
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let v: float<m/s> = 1.0<m>;
+    return 0;
+}

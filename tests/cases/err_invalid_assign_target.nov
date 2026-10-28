@@ -1,0 +1,8 @@
+// error: invalid assignment target
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    1 + 2 = 3;
+    return 0;
+}

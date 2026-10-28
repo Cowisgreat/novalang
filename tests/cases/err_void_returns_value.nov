@@ -1,0 +1,6 @@
+// error: void function cannot return a value
+fn f() { return 1; }
+fn main() -> int {
+    
+    return 0;
+}

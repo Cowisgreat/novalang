@@ -1,0 +1,9 @@
+// expect: 12 s
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let raw = 12.0;
+    print(raw as float<s>);
+    return 0;
+}

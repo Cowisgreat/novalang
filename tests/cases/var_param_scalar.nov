@@ -1,0 +1,9 @@
+// expect: 15
+fn f(var x: int) -> int {
+    x *= 3;
+    return x;
+}
+fn main() -> int {
+    print(f(5));
+    return 0;
+}

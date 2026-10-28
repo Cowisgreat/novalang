@@ -1,0 +1,5 @@
+// expect: 14
+fn main() -> int {
+    print(2 + 3 * 4);
+    return 0;
+}

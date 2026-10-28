@@ -1,0 +1,9 @@
+// expect: 9 m^2
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let side = 3.0<m>;
+    print(side * side);
+    return 0;
+}

@@ -1,0 +1,9 @@
+// expect: a	b
+// expect: say "hi"
+// expect: back\slash
+fn main() -> int {
+    print("a\tb");
+    print("say \"hi\"");
+    print("back\\slash");
+    return 0;
+}

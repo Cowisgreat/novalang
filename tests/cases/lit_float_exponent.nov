@@ -1,0 +1,5 @@
+// expect: 1500
+fn main() -> int {
+    print(1.5e3);
+    return 0;
+}

@@ -1,0 +1,8 @@
+// expect: [11, 2, 15]
+fn main() -> int {
+    var a = [1, 2, 3];
+    a[0] += 10;
+    a[2] *= 5;
+    print(a);
+    return 0;
+}

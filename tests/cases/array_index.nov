@@ -1,0 +1,8 @@
+// expect: 10
+// expect: 30
+fn main() -> int {
+    let a = [10, 20, 30];
+    print(a[0]);
+    print(a[2]);
+    return 0;
+}

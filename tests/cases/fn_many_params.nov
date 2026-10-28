@@ -1,0 +1,6 @@
+// expect: 15
+fn sum5(a: int, b: int, c: int, d: int, e: int) -> int { return a + b + c + d + e; }
+fn main() -> int {
+    print(sum5(1, 2, 3, 4, 5));
+    return 0;
+}

@@ -1,0 +1,6 @@
+// expect: none
+fn main() -> int {
+    for i in 5..2 { print(i); }
+    print("none");
+    return 0;
+}

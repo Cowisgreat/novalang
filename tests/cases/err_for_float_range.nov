@@ -1,0 +1,6 @@
+// error: range start must be int, got float
+// error: range end must be int, got float
+fn main() -> int {
+    for i in 0.0..3.0 { }
+    return 0;
+}

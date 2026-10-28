@@ -1,0 +1,7 @@
+// expect: [1, 42, 3]
+fn main() -> int {
+    var a = [1, 2, 3];
+    a[1] = 42;
+    print(a);
+    return 0;
+}

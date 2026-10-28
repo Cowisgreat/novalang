@@ -1,0 +1,5 @@
+// error: '!' requires bool, got int
+fn main() -> int {
+    print(!1);
+    return 0;
+}

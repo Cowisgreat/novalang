@@ -1,0 +1,9 @@
+// expect: 9.81 m/s^2
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let g: float<m/s^2> = 9.81<m/s^2>;
+    print(g);
+    return 0;
+}

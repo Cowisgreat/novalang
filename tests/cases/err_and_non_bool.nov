@@ -1,0 +1,5 @@
+// error: operator '&&' cannot be applied to int and bool
+fn main() -> int {
+    print(1 && true);
+    return 0;
+}

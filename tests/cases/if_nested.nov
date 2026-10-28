@@ -1,0 +1,9 @@
+// expect: both
+fn main() -> int {
+    let a = 1;
+    let b = 2;
+    if a == 1 {
+        if b == 2 { print("both"); }
+    }
+    return 0;
+}

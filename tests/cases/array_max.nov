@@ -1,0 +1,10 @@
+// expect: 9
+fn max(xs: [int]) -> int {
+    var best = xs[0];
+    for x in xs { if x > best { best = x; } }
+    return best;
+}
+fn main() -> int {
+    print(max([3, 9, 2, 7]));
+    return 0;
+}

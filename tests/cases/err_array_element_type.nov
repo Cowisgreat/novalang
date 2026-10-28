@@ -1,0 +1,9 @@
+// error: cannot assign a value of type bool to 'a' of type int
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    var a = [1, 2];
+    a[0] = true;
+    return 0;
+}

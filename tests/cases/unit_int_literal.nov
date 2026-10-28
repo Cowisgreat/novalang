@@ -1,0 +1,8 @@
+// expect: 5 m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(5<m>);
+    return 0;
+}

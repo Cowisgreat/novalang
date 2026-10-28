@@ -1,0 +1,8 @@
+// error: division by zero
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(1 % 0);
+    return 0;
+}

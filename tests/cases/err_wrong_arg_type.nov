@@ -1,0 +1,6 @@
+// error: argument 1 of 'f' expects int, got bool
+fn f(a: int) -> int { return a; }
+fn main() -> int {
+    print(f(true));
+    return 0;
+}

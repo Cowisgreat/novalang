@@ -1,0 +1,9 @@
+// expect: 0
+// expect: 1
+// expect: 100
+fn main() -> int {
+    let i = 100;
+    for i in 0..2 { print(i); }
+    print(i);
+    return 0;
+}

@@ -1,0 +1,8 @@
+// expect: 1 m/s^2
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(1.0<m/s/s>);
+    return 0;
+}

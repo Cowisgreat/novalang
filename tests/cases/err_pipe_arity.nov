@@ -1,0 +1,9 @@
+// error: function 'f' expects 1 argument(s), got 2
+fn f(a: int) -> int { return a; }
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(1 |> f(2));
+    return 0;
+}

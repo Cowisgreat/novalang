@@ -1,0 +1,5 @@
+// error: operator '==' cannot be applied to string and string
+fn main() -> int {
+    print("a" == "a");
+    return 0;
+}

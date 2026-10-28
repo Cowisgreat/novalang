@@ -1,0 +1,5 @@
+// error: assignment to undeclared variable 'z'
+fn main() -> int {
+    z = 3;
+    return 0;
+}

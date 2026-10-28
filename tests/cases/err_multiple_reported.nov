@@ -1,0 +1,7 @@
+// error: undeclared variable 'a'
+// error: undeclared variable 'b'
+fn main() -> int {
+    print(a);
+    print(b);
+    return 0;
+}

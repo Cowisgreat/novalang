@@ -1,0 +1,13 @@
+// expect: 56
+fn first_multiple(k: int, above: int) -> int {
+    var i = above + 1;
+    while true {
+        if i % k == 0 { return i; }
+        i = i + 1;
+    }
+    return -1;
+}
+fn main() -> int {
+    print(first_multiple(7, 50));
+    return 0;
+}

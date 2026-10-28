@@ -1,0 +1,11 @@
+// expect: true
+// expect: 1
+fn main() -> int {
+    let x = 1;
+    {
+        let x = true;
+        print(x);
+    }
+    print(x);
+    return 0;
+}

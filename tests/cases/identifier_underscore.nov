@@ -1,0 +1,6 @@
+// expect: 9
+fn main() -> int {
+    let _my_var2 = 9;
+    print(_my_var2);
+    return 0;
+}

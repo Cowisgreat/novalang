@@ -1,0 +1,7 @@
+// runtime-error: division by zero
+fn main() -> int {
+    var x = 5;
+    let z = 0;
+    x /= z;
+    return 0;
+}

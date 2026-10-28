@@ -1,0 +1,9 @@
+// expect: 10 m/s
+unit m;
+unit s;
+unit kg;
+fn per(d: float<m>, t: float<s>) -> float<m/s> { return d / t; }
+fn main() -> int {
+    100.0<m> |> per(10.0<s>) |> print;
+    return 0;
+}

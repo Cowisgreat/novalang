@@ -1,0 +1,10 @@
+// expect: true
+// expect: true
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(3.0<m> < 4.0<m>);
+    print(5<s> == 5<s>);
+    return 0;
+}

@@ -1,0 +1,8 @@
+// error: unknown unit 'furlong'
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(1.0<furlong>);
+    return 0;
+}

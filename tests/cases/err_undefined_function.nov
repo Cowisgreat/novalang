@@ -1,0 +1,5 @@
+// error: call to undefined function 'foo'
+fn main() -> int {
+    foo();
+    return 0;
+}

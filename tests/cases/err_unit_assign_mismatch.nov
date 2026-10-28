@@ -1,0 +1,9 @@
+// error: cannot assign a value of type float<s> to 'd' of type float<m>
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    var d = 1.0<m>;
+    d = 2.0<s>;
+    return 0;
+}

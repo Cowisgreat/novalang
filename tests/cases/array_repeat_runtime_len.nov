@@ -1,0 +1,7 @@
+// expect: 6
+fn main() -> int {
+    let n = 3;
+    let a = [1.5; n * 2];
+    print(len(a));
+    return 0;
+}

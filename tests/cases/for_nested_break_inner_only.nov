@@ -1,0 +1,12 @@
+// expect: 0
+// expect: 10
+// expect: 20
+fn main() -> int {
+    for i in 0..3 {
+        for j in 0..10 {
+            if j == 1 { break; }
+            print(i * 10 + j);
+        }
+    }
+    return 0;
+}

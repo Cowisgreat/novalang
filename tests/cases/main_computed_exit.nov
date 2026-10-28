@@ -1,0 +1,5 @@
+// exit: 5
+fn main() -> int {
+    let code = 2 + 3;
+    return code;
+}

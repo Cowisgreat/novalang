@@ -1,0 +1,8 @@
+// expect: hi
+// expect: hi
+fn greet() { print("hi"); }
+fn main() -> int {
+    greet();
+    greet();
+    return 0;
+}

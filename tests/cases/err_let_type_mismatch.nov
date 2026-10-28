@@ -1,0 +1,5 @@
+// error: cannot initialize 'x' of type int with a value of type float
+fn main() -> int {
+    let x: int = 2.5;
+    return 0;
+}

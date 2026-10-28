@@ -1,0 +1,13 @@
+// expect: 2700 m
+// expect: [400, 800, 1500] m
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let laps = [400.0<m>, 800.0<m>, 1500.0<m>];
+    var total = 0.0<m>;
+    for d in laps { total += d; }
+    print(total);
+    print(laps);
+    return 0;
+}

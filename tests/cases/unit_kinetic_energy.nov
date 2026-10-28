@@ -1,0 +1,13 @@
+// expect: 9 kg*m^2/s^2
+unit m;
+unit s;
+unit kg;
+unit N = <kg*m/s^2>;
+unit J = <N*m>;
+fn main() -> int {
+    let mass = 2.0<kg>;
+    let v = 3.0<m/s>;
+    let e: float<J> = 0.5 * mass * v * v;
+    print(e);
+    return 0;
+}

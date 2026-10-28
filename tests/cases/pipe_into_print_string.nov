@@ -1,0 +1,5 @@
+// expect: piped
+fn main() -> int {
+    "piped" |> print;
+    return 0;
+}

@@ -1,0 +1,10 @@
+// expect: [0, 1, 2, 3]
+fn range(n: int) -> [int] {
+    var a = [0; n];
+    for i in 0..n { a[i] = i; }
+    return a;
+}
+fn main() -> int {
+    print(range(4));
+    return 0;
+}

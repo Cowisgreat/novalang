@@ -1,0 +1,8 @@
+// error: empty array literal
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let a = [];
+    return 0;
+}
