@@ -40,8 +40,8 @@ fn main() {
   never reassigned) and removes them.
 - **Two backends:** ahead-of-time native executables, or `--run` to JIT-compile and run in
   memory.
-- **Performance at parity with C.** NovaLang matches clang on the array kernels and is about
-  8% behind on N-body (see [Benchmarks](#benchmarks)).
+- **Performance at parity with C.** NovaLang is within measurement noise of clang on the
+  array kernels and about 8% behind on N-body (see [Benchmarks](#benchmarks)).
 - **Diagnostics** in the style of clang and rustc, showing the source line and a caret.
 - **371 test programs**, run ahead-of-time and through the JIT, at `-O0` and `-O2`, in CI.
 
@@ -148,17 +148,18 @@ runtime error at sort.nov:37:15: index 7 out of bounds for array of length 7
 ## Benchmarks
 
 Produced by `bench/run.sh`. C is built with clang `-O2 -march=native`, so both compilers use
-the same LLVM backend; the times are the best of three runs.
+the same LLVM backend; the times are the best of three runs. They were measured on a shared
+4-core cloud VM, where differences under about 10% are noise.
 
 | | clang -O2 | Nova -O2 | Nova -O2 unchecked | Nova -O0 | -O0 `--no-bce` | -O0 unchecked |
 | --- | --- | --- | --- | --- | --- | --- |
-| nbody | 2.38s | 2.57s | 2.52s | 8.05s | 12.91s | 7.62s |
-| sum | 0.59s | 0.59s | 0.61s | 2.75s | 3.25s | 2.65s |
-| pairs | 0.40s | 0.41s | 0.41s | 2.82s | 4.58s | 2.72s |
+| nbody | 2.35s | 2.53s | 2.49s | 8.03s | 12.76s | 7.65s |
+| sum | 0.65s | 0.65s | 0.62s | 2.66s | 3.22s | 2.92s |
+| pairs | 0.42s | 0.33s | 0.37s | 2.39s | 4.50s | 2.74s |
 
 - At `-O2`, the runtime safety checks cost about 0–2%.
-- At `-O0` (and in the JIT), front-end bounds-check elimination makes programs about 1.6×
-  faster and brings them within a few percent of having no checks at all.
+- At `-O0` (and in the JIT), front-end bounds-check elimination makes programs 1.6–1.9×
+  faster and brings them to within noise of having no checks at all.
 - The N-body version uses units throughout (positions in AU, time in years). It prints the
   same energies as the C version, and CI checks that the outputs match.
 

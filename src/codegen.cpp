@@ -33,9 +33,13 @@ std::string mangle(const std::string &name) { return "nova." + name; }
 
 class CodeGen {
  public:
-  CodeGen(llvm::LLVMContext &ctx, const std::string &name, const CodeGenOptions &opts, CodeGenStats &stats)
+  CodeGen(llvm::LLVMContext &ctx, const std::string &name, llvm::TargetMachine &tm, const CodeGenOptions &opts,
+          CodeGenStats &stats)
       : ctx_(ctx), mod_(std::make_unique<llvm::Module>(name, ctx)), b_(ctx), file_(name), opts_(opts),
-        stats_(stats) {}
+        stats_(stats) {
+    mod_->setDataLayout(tm.createDataLayout());
+    mod_->setTargetTriple(tm.getTargetTriple().str());
+  }
 
   std::unique_ptr<llvm::Module> run(const Program &prog) {
     declareRuntime();
@@ -648,8 +652,8 @@ class CodeGen {
 }  // namespace
 
 std::unique_ptr<llvm::Module> generateIR(const Program &prog, llvm::LLVMContext &ctx, const std::string &moduleName,
-                                         const CodeGenOptions &opts, CodeGenStats &stats) {
-  auto mod = CodeGen(ctx, moduleName, opts, stats).run(prog);
+                                         llvm::TargetMachine &tm, const CodeGenOptions &opts, CodeGenStats &stats) {
+  auto mod = CodeGen(ctx, moduleName, tm, opts, stats).run(prog);
   if (llvm::verifyModule(*mod, &llvm::errs())) {
     llvm::errs() << "internal compiler error: generated invalid LLVM IR\n";
     return nullptr;
@@ -657,7 +661,7 @@ std::unique_ptr<llvm::Module> generateIR(const Program &prog, llvm::LLVMContext 
   return mod;
 }
 
-std::unique_ptr<llvm::TargetMachine> createHostTargetMachine(llvm::Module &mod, int optLevel, std::string &err) {
+std::unique_ptr<llvm::TargetMachine> createHostTargetMachine(int optLevel, std::string &err) {
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
 
@@ -677,8 +681,6 @@ std::unique_ptr<llvm::TargetMachine> createHostTargetMachine(llvm::Module &mod, 
   std::unique_ptr<llvm::TargetMachine> tm(target->createTargetMachine(
       triple, llvm::sys::getHostCPUName(), features.getString(), llvm::TargetOptions(), llvm::Reloc::PIC_,
       std::nullopt, level));
-  mod.setDataLayout(tm->createDataLayout());
-  mod.setTargetTriple(triple);
   return tm;
 }
 

@@ -134,16 +134,16 @@ int main(int argc, char **argv) {
   }
   if (checkOnly) return 0;
 
-  auto ctx = std::make_unique<llvm::LLVMContext>();
-  nova::CodeGenStats codegenStats;
-  auto mod = nova::generateIR(*prog, *ctx, input, opts, codegenStats);
-  if (!mod) return 3;
   std::string err;
-  auto tm = nova::createHostTargetMachine(*mod, optLevel, err);
+  auto tm = nova::createHostTargetMachine(optLevel, err);
   if (!tm) {
     std::cerr << "novac: cannot target this machine: " << err << "\n";
     return 3;
   }
+  auto ctx = std::make_unique<llvm::LLVMContext>();
+  nova::CodeGenStats codegenStats;
+  auto mod = nova::generateIR(*prog, *ctx, input, *tm, opts, codegenStats);
+  if (!mod) return 3;
   nova::optimize(*mod, optLevel, tm.get());
 
   if (stats) {

@@ -26,13 +26,14 @@ struct CodeGenStats {
   int divisionChecksElided = 0;   // divisor is a non-zero constant
 };
 
-// Lowers a type-checked program to an LLVM module.
-std::unique_ptr<llvm::Module> generateIR(const Program &prog, llvm::LLVMContext &ctx, const std::string &moduleName,
-                                         const CodeGenOptions &opts, CodeGenStats &stats);
+// A TargetMachine for the host CPU and its features (like -march=native).
+std::unique_ptr<llvm::TargetMachine> createHostTargetMachine(int optLevel, std::string &err);
 
-// A TargetMachine for the host CPU and its features (like -march=native). The module's
-// data layout and triple are set from it so the optimizer sees the real target.
-std::unique_ptr<llvm::TargetMachine> createHostTargetMachine(llvm::Module &mod, int optLevel, std::string &err);
+// Lowers a type-checked program to an LLVM module for the given target. The module gets
+// the target's data layout before any IR is built, because IRBuilder picks alignments
+// (and the optimizer its type sizes) from it.
+std::unique_ptr<llvm::Module> generateIR(const Program &prog, llvm::LLVMContext &ctx, const std::string &moduleName,
+                                         llvm::TargetMachine &tm, const CodeGenOptions &opts, CodeGenStats &stats);
 
 // Runs the standard LLVM optimization pipeline at the given level (0-3). The target
 // machine supplies the cost model (TargetTransformInfo); without it the vectorizers

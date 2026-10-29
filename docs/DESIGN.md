@@ -203,17 +203,18 @@ overflow.
 
 ### Measured effect
 
-`bench/run.sh`, best of three runs, on a 4-core Xeon at 2.1 GHz:
+`bench/run.sh`, best of three runs, on a shared 4-core cloud VM (Xeon at 2.1 GHz). Run-to-run
+noise there is about ±10%, so only larger differences mean anything:
 
 | | clang -O2 | Nova -O2 | Nova -O2 unchecked | Nova -O0 | -O0 `--no-bce` | -O0 unchecked |
 | --- | --- | --- | --- | --- | --- | --- |
-| nbody (50M steps) | 2.38s | 2.57s | 2.52s | 8.05s | 12.91s | 7.62s |
-| sum (2G adds) | 0.59s | 0.59s | 0.61s | 2.75s | 3.25s | 2.65s |
-| pairs (2.2G mul-adds) | 0.40s | 0.41s | 0.41s | 2.82s | 4.58s | 2.72s |
+| nbody (50M steps) | 2.35s | 2.53s | 2.49s | 8.03s | 12.76s | 7.65s |
+| sum (2G adds) | 0.65s | 0.65s | 0.62s | 2.66s | 3.22s | 2.92s |
+| pairs (2.2G mul-adds) | 0.42s | 0.33s | 0.37s | 2.39s | 4.50s | 2.74s |
 
 What the numbers show:
 
-- **At -O2, safety costs 0–2%.** Even with `--no-bce`, no bounds check survives in the -O2 IR
+- **At -O2, safety costs nothing measurable.** Even with `--no-bce`, no bounds check survives in the -O2 IR
   of `nbody` or `sum`. After inlining, LLVM's own passes prove them redundant. Where a check
   does survive, the cold, well-predicted branch is nearly free.
 - **LLVM can't prove the triangular loop.** In `pairs`, with an array length LLVM can't see,
@@ -221,9 +222,9 @@ What the numbers show:
   that `i + 1` doesn't wrap. The front end's sign analysis proves it. At `-O2` the
   difference doesn't show in wall-clock time: the loop still vectorizes, and the one
   remaining check costs nothing measurable.
-- **The front-end pass matters at -O0 and in the JIT.** There, elimination makes N-body and
-  `pairs` about 1.6× faster (12.9s → 8.05s and 4.58s → 2.82s), within 2–6% of running with
-  no checks at all. That's where fast feedback matters most: debug builds and `--run`.
+- **The front-end pass matters at -O0 and in the JIT.** There, elimination makes N-body 1.6×
+  faster (12.76s → 8.03s) and `pairs` 1.9× faster (4.50s → 2.39s), within noise of running
+  with no checks at all. That's where fast feedback matters most: debug builds and `--run`.
 
 The honest conclusion is that a modern optimizer recovers most of the cost of checks by
 itself. The front-end analysis is cheap insurance for unoptimized code and for patterns
@@ -249,10 +250,11 @@ itself. The front-end analysis is cheap insurance for unoptimized code and for p
   suffix, is built at compile time, with a generated loop for arrays and recursion for nested
   structs.
 
-### Two pipeline bugs found by benchmarking
+### Pipeline bugs found by benchmarking
 
 The first benchmark run showed NovaLang about 15% behind C on N-body, and *nothing* was
-vectorized, not even a plain array sum. Two separate causes:
+vectorized, not even a plain array sum. There were two separate causes, plus a third bug
+found while reading the IR:
 
 1. **No target information.** The `PassBuilder` was built without a `TargetMachine`, so
    `TargetTransformInfo` fell back to a default cost model that reports a vector width of 1.
@@ -264,7 +266,13 @@ vectorized, not even a plain array sum. Two separate causes:
    this by running `opt -O2` on NovaLang's own unoptimized IR: it produced 127 vector
    instructions, while my in-process pipeline produced none.
 
-After both fixes, N-body went from 2.85s to 2.57s (127 SLP-vectorized instructions), and
+3. **Wrong alignments.** Even after fix 1, the data layout was set after IR generation.
+   `IRBuilder` picks each load's and store's alignment from the layout when the instruction
+   is created, so every `i64` access came out as `align 4`. That's legal but under-aligned.
+   The target machine is now created first, and the module gets its layout before any IR is
+   built.
+
+After the first two fixes, N-body went from 2.85s to 2.57s (127 SLP-vectorized instructions), and
 `sum` and `pairs` reached parity with clang. The remaining ~8% on N-body is mostly phase
 ordering. In the C version `N = 5` is a literal, so clang fully unrolls the force loop before
 inlining. In NovaLang the length becomes a constant only after `advance` is inlined into
