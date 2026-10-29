@@ -1,0 +1,9 @@
+// expect: 0.5 1/s
+unit m;
+unit s;
+unit kg;
+fn per(x: float<'u>) -> float<1/'u> { return 1.0 / x; }
+fn main() -> int {
+    print(per(2.0<s>));
+    return 0;
+}

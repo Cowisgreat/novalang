@@ -1,0 +1,6 @@
+// error: returning float<'u^2> from a function declared to return float<'u>
+unit m;
+unit s;
+unit kg;
+fn f(x: float<'u>) -> float<'u> { return x * x; }
+fn main() {}

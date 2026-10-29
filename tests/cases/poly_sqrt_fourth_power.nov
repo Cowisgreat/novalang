@@ -1,0 +1,8 @@
+// expect: 4 m^2
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(sqrt(16.0<m^4>));
+    return 0;
+}

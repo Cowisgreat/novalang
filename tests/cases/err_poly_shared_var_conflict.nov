@@ -1,0 +1,8 @@
+// error: argument 2 of 'add' expects float<'u>, got float<s>
+unit m;
+unit s;
+unit kg;
+fn add(a: float<'u>, b: float<'u>) -> float<'u> { return a + b; }
+fn main() {
+    print(add(1.0<m>, 1.0<s>));
+}

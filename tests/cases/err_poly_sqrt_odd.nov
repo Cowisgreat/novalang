@@ -1,0 +1,8 @@
+// error: (m^3/s^2 has no exact square root)
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(sqrt(1.0<m^3/s^2>));
+    return 0;
+}

@@ -1,0 +1,12 @@
+// expect: 4 m
+// expect: 1.41421
+// expect: 3 m/s
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(sqrt(16.0<m^2>));
+    print(sqrt(2.0));
+    print(sqrt(9.0<m^2/s^2>));
+    return 0;
+}

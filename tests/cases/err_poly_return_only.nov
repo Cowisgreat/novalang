@@ -1,0 +1,6 @@
+// error: unit variable 'v appears in the return type of 'bad' but in no parameter
+unit m;
+unit s;
+unit kg;
+fn bad(x: float<'u>) -> float<'v> { return x; }
+fn main() {}

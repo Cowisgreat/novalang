@@ -1,0 +1,6 @@
+// error: cannot assign to immutable variable 'p'
+struct Point { x: int, y: int }
+fn main() {
+    let p = Point(x: 1, y: 2);
+    p.x = 5;
+}

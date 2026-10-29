@@ -1,0 +1,7 @@
+// expect: Rec { name: nova, ok: true, ratio: 0.5 }
+struct Rec { name: string, ok: bool, ratio: float }
+fn main() -> int {
+    let s = Rec(name: "nova", ok: true, ratio: 0.5);
+    print(s);
+    return 0;
+}

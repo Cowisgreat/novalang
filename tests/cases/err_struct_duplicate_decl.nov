@@ -1,0 +1,4 @@
+// error: redefinition of struct 'S'
+struct S { v: int }
+struct S { v: int }
+fn main() {}

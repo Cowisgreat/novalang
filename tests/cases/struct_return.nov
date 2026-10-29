@@ -1,0 +1,7 @@
+// expect: Point { x: 0, y: 0 }
+struct Point { x: int, y: int }
+fn origin() -> Point { return Point(x: 0, y: 0); }
+fn main() -> int {
+    print(origin());
+    return 0;
+}

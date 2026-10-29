@@ -1,0 +1,6 @@
+// error: units can only be attached to int or float, not bool
+unit m;
+unit s;
+unit kg;
+fn f(x: bool<'u>) {}
+fn main() {}

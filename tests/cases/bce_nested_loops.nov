@@ -1,0 +1,12 @@
+// expect: 21
+// stats: bounds checks:   0 emitted, 2 elided
+fn main() -> int {
+    let a = [1, 2];
+    let b = [3, 4];
+    var s = 0;
+    for i in 0..len(a) {
+        for j in 0..len(b) { s += a[i] * b[j]; }
+    }
+    print(s);
+    return 0;
+}

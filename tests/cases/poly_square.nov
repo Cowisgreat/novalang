@@ -1,0 +1,13 @@
+// expect: 9 m^2
+// expect: 4 s^2
+// expect: 25
+unit m;
+unit s;
+unit kg;
+fn square(x: float<'u>) -> float<'u^2> { return x * x; }
+fn main() -> int {
+    print(square(3.0<m>));
+    print(square(2.0<s>));
+    print(square(5.0));
+    return 0;
+}

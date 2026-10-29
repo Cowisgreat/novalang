@@ -1,0 +1,102 @@
+// The classic N-body benchmark (Jovian planets), with units of measure:
+// positions in AU, time in years, masses in solar masses.
+unit au;
+unit yr;
+unit msun;
+
+struct Vec3 { x: float<au>, y: float<au>, z: float<au> }
+struct Vel3 { x: float<au/yr>, y: float<au/yr>, z: float<au/yr> }
+struct Body { pos: Vec3, vel: Vel3, mass: float<msun> }
+
+fn body(x: float, y: float, z: float, vx: float, vy: float, vz: float, mass: float) -> Body {
+    let days_per_year = 365.24;
+    let solar_mass = 39.47841760435743;   // 4 * pi^2
+    return Body(
+        pos: Vec3(x: x as float<au>, y: y as float<au>, z: z as float<au>),
+        vel: Vel3(x: (vx * days_per_year) as float<au/yr>, y: (vy * days_per_year) as float<au/yr>,
+                  z: (vz * days_per_year) as float<au/yr>),
+        mass: (mass * solar_mass) as float<msun>);
+}
+
+// G = 1 in these units, so G*m has units au^3/yr^2 (mass and G cancel to that).
+fn gm(b: Body) -> float<au^3/yr^2> { return (b.mass as float) as float<au^3/yr^2>; }
+
+fn energy(bodies: [Body]) -> float<au^2/yr^2> {
+    var e = 0.0<au^2/yr^2>;
+    for i in 0..len(bodies) {
+        let b = bodies[i];
+        let v2 = b.vel.x * b.vel.x + b.vel.y * b.vel.y + b.vel.z * b.vel.z;
+        e += 0.5 * (b.mass as float) * v2;
+        for j in i + 1..len(bodies) {
+            let o = bodies[j];
+            let dx = b.pos.x - o.pos.x;
+            let dy = b.pos.y - o.pos.y;
+            let dz = b.pos.z - o.pos.z;
+            let dist = sqrt(dx * dx + dy * dy + dz * dz);
+            e -= (b.mass as float) * gm(o) / dist;
+        }
+    }
+    return e;
+}
+
+fn advance(var bodies: [Body], dt: float<yr>) {
+    for i in 0..len(bodies) {
+        for j in i + 1..len(bodies) {
+            let dx = bodies[i].pos.x - bodies[j].pos.x;
+            let dy = bodies[i].pos.y - bodies[j].pos.y;
+            let dz = bodies[i].pos.z - bodies[j].pos.z;
+            let d2 = dx * dx + dy * dy + dz * dz;
+            let mag = dt / (d2 * sqrt(d2));                // yr/au^3
+            let mi = gm(bodies[i]) * mag;                  // au^3/yr^2 * yr/au^3 = 1/yr
+            let mj = gm(bodies[j]) * mag;
+            bodies[i].vel.x -= dx * mj;
+            bodies[i].vel.y -= dy * mj;
+            bodies[i].vel.z -= dz * mj;
+            bodies[j].vel.x += dx * mi;
+            bodies[j].vel.y += dy * mi;
+            bodies[j].vel.z += dz * mi;
+        }
+    }
+    for i in 0..len(bodies) {
+        bodies[i].pos.x += bodies[i].vel.x * dt;
+        bodies[i].pos.y += bodies[i].vel.y * dt;
+        bodies[i].pos.z += bodies[i].vel.z * dt;
+    }
+}
+
+fn offset_momentum(var bodies: [Body]) {
+    var px = 0.0<au/yr>;
+    var py = 0.0<au/yr>;
+    var pz = 0.0<au/yr>;
+    var total = 0.0<msun>;
+    for i in 0..len(bodies) {
+        let m = bodies[i].mass as float;
+        px += bodies[i].vel.x * m;
+        py += bodies[i].vel.y * m;
+        pz += bodies[i].vel.z * m;
+    }
+    let sun_mass = bodies[0].mass as float;
+    bodies[0].vel.x = -px / sun_mass;
+    bodies[0].vel.y = -py / sun_mass;
+    bodies[0].vel.z = -pz / sun_mass;
+}
+
+fn main() {
+    var bodies = [
+        body(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+        body(4.84143144246472090e+00, -1.16032004402742839e+00, -1.03622044471123109e-01,
+             1.66007664274403694e-03, 7.69901118419740425e-03, -6.90460016972063023e-05, 9.54791938424326609e-04),
+        body(8.34336671824457987e+00, 4.12479856412430479e+00, -4.03523417114321381e-01,
+             -2.76742510726862411e-03, 4.99852801234917238e-03, 2.30417297573763929e-05, 2.85885980666130812e-04),
+        body(1.28943695621391310e+01, -1.51111514016986312e+01, -2.23307578892655734e-01,
+             2.96460137564761618e-03, 2.37847173959480950e-03, -2.96589568540237556e-05, 4.36624404335156298e-05),
+        body(1.53796971148509165e+01, -2.59193146099879641e+01, 1.79258772950371181e-01,
+             2.68067772490389322e-03, 1.62824170038242295e-03, -9.51592254519715870e-05, 5.15138902046611451e-05)
+    ];
+    offset_momentum(bodies);
+    print(energy(bodies));
+    for step in 0..50000000 {
+        advance(bodies, 0.01<yr>);
+    }
+    print(energy(bodies));
+}

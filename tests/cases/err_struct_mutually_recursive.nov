@@ -1,0 +1,4 @@
+// error: contains itself and would have infinite size
+struct A { b: B }
+struct B { a: A }
+fn main() {}

@@ -64,9 +64,11 @@ static Call *pipe(Expr *lhs, std::string *callee, std::vector<Expr *> *args) {
   std::vector<nova::Expr *> *exprs;
   std::vector<nova::Stmt *> *stmts;
   std::vector<nova::Param> *params;
+  std::vector<nova::FieldDecl> *fieldDecls;
+  nova::StructLit *structLit;
 }
 
-%token FN LET VAR IF ELSE WHILE FOR IN RETURN BREAK CONTINUE AS UNIT_KW
+%token FN LET VAR IF ELSE WHILE FOR IN RETURN BREAK CONTINUE AS UNIT_KW STRUCT
 %token ARROW PIPE DOTDOT EQ NE LE GE AND OR
 %token <intVal> INT_LIT
 %token <floatVal> FLOAT_LIT
@@ -85,6 +87,8 @@ static Call *pipe(Expr *lhs, std::string *callee, std::vector<Expr *> *args) {
 %type <params> params param_list
 %type <type> type_spec ret_type opt_type
 %type <boolVal> opt_var
+%type <fieldDecls> field_decls field_decl_list
+%type <structLit> field_inits
 
 %destructor { delete $$; } <str> <unit> <type>
 
@@ -97,7 +101,7 @@ static Call *pipe(Expr *lhs, std::string *callee, std::vector<Expr *> *args) {
 %left '*' '/' '%'
 %precedence AS
 %precedence UNARY
-%precedence '['
+%precedence '[' '.'
 
 %%
 
@@ -105,6 +109,25 @@ program
   : %empty                { novaParsedProgram = new Program(); }
   | program function      { novaParsedProgram->functions.emplace_back($2); }
   | program unit_decl
+  | program struct_decl
+  ;
+
+struct_decl
+  : STRUCT IDENT '{' field_decls '}' {
+      novaParsedProgram->structs.push_back({L(@2), *$2, std::move(*$4)});
+      delete $2; delete $4;
+    }
+  ;
+
+field_decls
+  : %empty                { $$ = new std::vector<FieldDecl>(); }
+  | field_decl_list       { $$ = $1; }
+  | field_decl_list ','   { $$ = $1; }
+  ;
+
+field_decl_list
+  : IDENT ':' type_spec   { $$ = new std::vector<FieldDecl>(); $$->push_back({*$1, take($3), L(@1)}); delete $1; }
+  | field_decl_list ',' IDENT ':' type_spec { $$ = $1; $$->push_back({*$3, take($5), L(@3)}); delete $3; }
   ;
 
 unit_decl
@@ -129,6 +152,7 @@ function
 type_spec
   : TYPE                  { $$ = new Type($1); }
   | TYPE UNIT_ANNOT       { $$ = new Type($1); $$->unit = *$2; delete $2; }
+  | IDENT                 { $$ = new Type(Kind::Struct); $$->structName = *$1; delete $1; }
   | '[' type_spec ']'     {
       if ($2->array) diag().error(L(@1), "nested arrays are not supported");
       $$ = $2; $$->array = true;
@@ -208,6 +232,8 @@ expr
   | STRING_LIT            { $$ = at(new StringLit(*$1), @1); delete $1; }
   | IDENT                 { $$ = at(new VarRef(*$1), @1); delete $1; }
   | IDENT '(' args ')'    { $$ = at(new Call(*$1, $3), @1); delete $1; }
+  | IDENT '(' field_inits ')' { $$ = at($3, @1); $3->name = *$1; delete $1; }
+  | expr '.' IDENT        { $$ = at(new FieldAccess($1, *$3), @2); delete $3; }
   | '[' arg_list ']'      { $$ = at(new ArrayLit($2), @1); }
   | '[' ']'               { diag().error(L(@1), "empty array literal: use [value; 0] to give the element type");
                             $$ = at(new ArrayLit(nullptr), @1); }
@@ -237,6 +263,13 @@ expr
 args
   : %empty                { $$ = nullptr; }
   | arg_list              { $$ = $1; }
+  ;
+
+// Struct literals use named arguments, Vec2(x: 1.0, y: 2.0), rather than Rust's
+// Vec2 { ... }, which would be ambiguous with a block in `if v { ... }`.
+field_inits
+  : IDENT ':' expr        { $$ = new StructLit(""); $$->fields.push_back({*$1, ExprPtr($3), L(@1)}); delete $1; }
+  | field_inits ',' IDENT ':' expr { $$ = $1; $$->fields.push_back({*$3, ExprPtr($5), L(@3)}); delete $3; }
   ;
 
 arg_list

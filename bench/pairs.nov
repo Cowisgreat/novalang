@@ -1,0 +1,31 @@
+// Triangular loop over all pairs, with an array length the optimizer can't see.
+// LLVM's own passes can't prove xs[j] in bounds when j starts at i + 1, but the
+// front end's sign analysis can (0 <= i < len, so i + 1 can't wrap).
+fn collatz(start: int) -> int {
+    var n = start;
+    var steps = 0;
+    while n != 1 {
+        if n % 2 == 0 { n = n / 2; } else { n = 3 * n + 1; }
+        steps += 1;
+    }
+    return steps;
+}
+
+fn pairs(xs: [int]) -> int {
+    var s = 0;
+    for i in 0..len(xs) {
+        for j in i + 1..len(xs) {
+            s += xs[i] * xs[j];
+        }
+    }
+    return s;
+}
+
+fn main() {
+    let n = collatz(27) * 600;   // 66600, computed at runtime
+    var data = [0; n];
+    for i in 0..n {
+        data[i] = i % 13;
+    }
+    print(pairs(data));
+}

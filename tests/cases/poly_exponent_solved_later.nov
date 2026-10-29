@@ -1,0 +1,9 @@
+// expect: 3 m*s
+unit m;
+unit s;
+unit kg;
+fn scale(a: float<'u>, b: float<'u*'v>) -> float<'u*'v> { return b * (a / a); }
+fn main() -> int {
+    print(scale(2.0<m>, 3.0<m*s>));
+    return 0;
+}

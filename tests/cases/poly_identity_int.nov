@@ -1,0 +1,9 @@
+// expect: 7 kg
+unit m;
+unit s;
+unit kg;
+fn id(x: int<'u>) -> int<'u> { return x; }
+fn main() -> int {
+    print(id(7<kg>));
+    return 0;
+}

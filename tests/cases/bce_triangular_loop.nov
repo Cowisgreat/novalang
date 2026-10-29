@@ -1,0 +1,13 @@
+// `for j in i + 1..len(a)` inside a safe loop over i: j is still provably in bounds.
+// expect: 11
+// stats: bounds checks:   0 emitted, 2 elided
+fn main() {
+    let a = [1, 2, 3];
+    var pairs = 0;
+    for i in 0..len(a) {
+        for j in i + 1..len(a) {
+            pairs += a[i] * a[j];
+        }
+    }
+    print(pairs);
+}

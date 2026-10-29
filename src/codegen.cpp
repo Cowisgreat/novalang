@@ -1,6 +1,9 @@
 #include "codegen.h"
 
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/ExecutionEngine/Orc/ThreadSafeModule.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/MDBuilder.h>
@@ -14,7 +17,9 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/SubtargetFeature.h>
 
+#include <cstdio>
 #include <map>
 #include <vector>
 
@@ -28,11 +33,13 @@ std::string mangle(const std::string &name) { return "nova." + name; }
 
 class CodeGen {
  public:
-  CodeGen(llvm::LLVMContext &ctx, const std::string &name)
-      : ctx_(ctx), mod_(std::make_unique<llvm::Module>(name, ctx)), b_(ctx), file_(name) {}
+  CodeGen(llvm::LLVMContext &ctx, const std::string &name, const CodeGenOptions &opts, CodeGenStats &stats)
+      : ctx_(ctx), mod_(std::make_unique<llvm::Module>(name, ctx)), b_(ctx), file_(name), opts_(opts),
+        stats_(stats) {}
 
   std::unique_ptr<llvm::Module> run(const Program &prog) {
     declareRuntime();
+    declareStructs(prog);
     for (auto &f : prog.functions) declareFunction(*f);
     for (auto &f : prog.functions) defineFunction(*f);
     emitEntryPoint(prog);
@@ -49,30 +56,52 @@ class CodeGen {
   std::unique_ptr<llvm::Module> mod_;
   llvm::IRBuilder<> b_;
   std::string file_;
+  const CodeGenOptions &opts_;
+  CodeGenStats &stats_;
   llvm::Function *printf_ = nullptr;
   llvm::Function *dprintf_ = nullptr;
   llvm::Function *malloc_ = nullptr;
   llvm::Function *exit_ = nullptr;
   llvm::Function *current_ = nullptr;
+  std::map<std::string, const StructDecl *> structDecls_;
+  std::map<std::string, llvm::StructType *> structTypes_;
   std::vector<std::map<std::string, llvm::AllocaInst *>> scopes_;
   std::vector<Loop> loops_;
+
+  // ------------------------------------------------------------------ types
 
   // Arrays are fat pointers: { element*, length }. Units exist only at compile time.
   llvm::StructType *arrayTy() { return llvm::StructType::get(ctx_, {b_.getPtrTy(), b_.getInt64Ty()}); }
 
-  llvm::Type *lowerScalar(Kind k) {
-    switch (k) {
+  // Lowers a non-array type (an array element, variable, field or parameter).
+  llvm::Type *lowerElem(const Type &t) {
+    switch (t.kind) {
       case Kind::Int: return b_.getInt64Ty();
       case Kind::Float: return b_.getDoubleTy();
       case Kind::Bool: return b_.getInt1Ty();
       case Kind::String: return b_.getPtrTy();
+      case Kind::Struct: return structTypes_.at(t.structName);
       case Kind::Void:
       case Kind::Unknown: break;
     }
     return b_.getVoidTy();
   }
 
-  llvm::Type *lower(const Type &t) { return t.array ? arrayTy() : lowerScalar(t.kind); }
+  llvm::Type *lower(const Type &t) { return t.array ? arrayTy() : lowerElem(t); }
+
+  // Structs are value types laid out as LLVM named structs. They are created opaque
+  // first so fields can refer to structs declared later in the file.
+  void declareStructs(const Program &prog) {
+    for (auto &s : prog.structs) {
+      structDecls_[s.name] = &s;
+      structTypes_[s.name] = llvm::StructType::create(ctx_, "struct." + s.name);
+    }
+    for (auto &s : prog.structs) {
+      std::vector<llvm::Type *> fields;
+      for (auto &f : s.fields) fields.push_back(lower(f.type));
+      structTypes_[s.name]->setBody(fields);
+    }
+  }
 
   void declareRuntime() {
     auto *ptr = b_.getPtrTy();
@@ -114,6 +143,7 @@ class CodeGen {
   llvm::BasicBlock *newBlock(const char *name) { return llvm::BasicBlock::Create(ctx_, name, current_); }
 
   // Emits `if (failed) { report; exit(101); }` and continues in the success path.
+  // The failure edge is weighted as cold so the hot path stays one compare and branch.
   void guard(llvm::Value *failed, Loc loc, const std::string &msg, std::vector<llvm::Value *> extra = {}) {
     auto *failBB = newBlock("panic");
     auto *okBB = newBlock("ok");
@@ -208,11 +238,20 @@ class CodeGen {
     b_.SetInsertPoint(endBB);
   }
 
-  // Address of a[i] after a bounds check.
-  llvm::Value *elementPtr(llvm::Value *arr, llvm::Value *idx, const Type &elem, Loc loc) {
-    llvm::Value *len = b_.CreateExtractValue(arr, 1, "len");
-    guard(b_.CreateICmpUGE(idx, len), loc, "index %lld out of bounds for array of length %lld", {idx, len});
-    return b_.CreateGEP(lowerScalar(elem.kind), b_.CreateExtractValue(arr, 0), idx, "elem.ptr");
+  // Address of a[i], bounds-checked unless sema proved the access safe.
+  llvm::Value *elementPtr(llvm::Value *arr, llvm::Value *idx, const Type &elem, const Index &ix) {
+    bool elided = !ix.checked && opts_.boundsCheckElim;
+    if (opts_.runtimeChecks && !elided) {
+      ++stats_.boundsChecks;
+      llvm::Value *len = b_.CreateExtractValue(arr, 1, "len");
+      // One unsigned compare also catches negative indexes.
+      guard(b_.CreateICmpUGE(idx, len), ix.loc, "index %lld out of bounds for array of length %lld", {idx, len});
+    } else if (elided) {
+      ++stats_.boundsChecksElided;
+    }
+    // `inbounds` is sound because the index was just checked or proven in range, and it
+    // lets alias analysis and SCEV assume the address arithmetic doesn't wrap.
+    return b_.CreateInBoundsGEP(lowerElem(elem), b_.CreateExtractValue(arr, 0), idx, "elem.ptr");
   }
 
   void genStmt(const Stmt &s) {
@@ -302,11 +341,11 @@ class CodeGen {
     if (auto *fe = dynamic_cast<const ForEachStmt *>(&s)) {
       llvm::Value *arr = genExpr(*fe->iterable);
       Type elem = fe->iterable->type.element();
+      llvm::Type *ety = lowerElem(elem);
       llvm::Value *len = b_.CreateExtractValue(arr, 1, "len");
       llvm::Value *data = b_.CreateExtractValue(arr, 0, "data");
       genCountedLoop(b_.getInt64(0), len, fe->var, [&](llvm::Value *i) {
-        auto *var = createEntryAlloca(lowerScalar(elem.kind), fe->var);
-        llvm::Type *ety = lowerScalar(elem.kind);
+        auto *var = createEntryAlloca(ety, fe->var);
         b_.CreateStore(b_.CreateLoad(ety, b_.CreateGEP(ety, data, i)), var);
         scopes_.emplace_back();
         scopes_.back()[fe->var] = var;
@@ -327,23 +366,35 @@ class CodeGen {
     }
   }
 
-  void genAssign(const AssignStmt &as) {
-    llvm::Value *ptr;
-    Type type;
-    if (auto *v = dynamic_cast<const VarRef *>(as.target.get())) {
-      ptr = lookup(v->name);
-      type = v->type;
-    } else {
-      auto *ix = static_cast<const Index *>(as.target.get());
+  // Address of an assignable expression: x, a[i], s.f and any chain of them.
+  // Struct fields are reached with GEPs, so `bodies[i].vel.x += dv` touches one double
+  // instead of copying the whole struct out and back.
+  llvm::Value *genAddress(const Expr &e) {
+    if (auto *v = dynamic_cast<const VarRef *>(&e)) return lookup(v->name);
+    if (auto *ix = dynamic_cast<const Index *>(&e)) {
       llvm::Value *arr = genExpr(*ix->base);
       llvm::Value *idx = genExpr(*ix->index);
-      type = ix->type;
-      ptr = elementPtr(arr, idx, type, ix->loc);
+      return elementPtr(arr, idx, ix->type, *ix);
     }
+    auto *fa = static_cast<const FieldAccess *>(&e);
+    llvm::Value *base = genAddress(*fa->base);
+    return b_.CreateStructGEP(structTypes_.at(fa->base->type.structName), base, fa->fieldIndex, fa->field);
+  }
+
+  // True if the expression names memory (so field reads can load one field via GEP).
+  static bool addressable(const Expr &e) {
+    if (dynamic_cast<const VarRef *>(&e) || dynamic_cast<const Index *>(&e)) return true;
+    if (auto *fa = dynamic_cast<const FieldAccess *>(&e)) return addressable(*fa->base);
+    return false;
+  }
+
+  void genAssign(const AssignStmt &as) {
+    const Type &type = as.target->type;
+    llvm::Value *ptr = genAddress(*as.target);
     llvm::Value *value = genExpr(*as.value);
     if (as.compound) {
       llvm::Value *old = b_.CreateLoad(lower(type), ptr);
-      value = genArith(as.op, old, value, type.kind, as.value->loc);
+      value = genArith(as.op, old, value, type.kind, as.value.get(), as.value->loc);
     }
     b_.CreateStore(value, ptr);
   }
@@ -372,17 +423,30 @@ class CodeGen {
     if (auto *n = dynamic_cast<const Cast *>(&e)) return genCast(*n);
     if (auto *n = dynamic_cast<const ArrayLit *>(&e)) return genArrayLit(*n);
     if (auto *n = dynamic_cast<const ArrayRepeat *>(&e)) return genArrayRepeat(*n);
+    if (auto *n = dynamic_cast<const StructLit *>(&e)) return genStructLit(*n);
 
-    if (auto *n = dynamic_cast<const Index *>(&e)) {
-      llvm::Value *arr = genExpr(*n->base);
-      llvm::Value *idx = genExpr(*n->index);
-      return b_.CreateLoad(lowerScalar(n->type.kind), elementPtr(arr, idx, n->type, n->loc));
+    if (auto *n = dynamic_cast<const Index *>(&e)) return b_.CreateLoad(lowerElem(n->type), genAddress(*n));
+
+    if (auto *n = dynamic_cast<const FieldAccess *>(&e)) {
+      if (addressable(*n)) return b_.CreateLoad(lower(n->type), genAddress(*n), n->field);
+      return b_.CreateExtractValue(genExpr(*n->base), n->fieldIndex, n->field);  // e.g. f().x
     }
     return nullptr;
   }
 
+  llvm::Value *genStructLit(const StructLit &n) {
+    const StructDecl &decl = *structDecls_.at(n.name);
+    llvm::Value *agg = llvm::UndefValue::get(structTypes_.at(n.name));
+    // Evaluate in source order, then place each value at its declared position.
+    std::map<std::string, llvm::Value *> values;
+    for (auto &f : n.fields) values[f.name] = genExpr(*f.value);
+    for (size_t i = 0; i < decl.fields.size(); ++i)
+      agg = b_.CreateInsertValue(agg, values.at(decl.fields[i].name), (unsigned)i);
+    return agg;
+  }
+
   llvm::Value *allocArray(const Type &elem, llvm::Value *len) {
-    llvm::Type *ety = lowerScalar(elem.kind);
+    llvm::Type *ety = lowerElem(elem);
     llvm::Value *bytes = b_.CreateMul(llvm::ConstantExpr::getSizeOf(ety), len);
     llvm::Value *data = b_.CreateCall(malloc_, {bytes}, "data");
     llvm::Value *arr = llvm::UndefValue::get(arrayTy());
@@ -392,7 +456,7 @@ class CodeGen {
 
   llvm::Value *genArrayLit(const ArrayLit &n) {
     Type elem = n.type.element();
-    llvm::Type *ety = lowerScalar(elem.kind);
+    llvm::Type *ety = lowerElem(elem);
     llvm::Value *arr = allocArray(elem, b_.getInt64(n.elements.size()));
     llvm::Value *data = b_.CreateExtractValue(arr, 0);
     for (size_t i = 0; i < n.elements.size(); ++i)
@@ -402,10 +466,11 @@ class CodeGen {
 
   llvm::Value *genArrayRepeat(const ArrayRepeat &n) {
     Type elem = n.type.element();
-    llvm::Type *ety = lowerScalar(elem.kind);
+    llvm::Type *ety = lowerElem(elem);
     llvm::Value *value = genExpr(*n.value);
     llvm::Value *len = genExpr(*n.count);
-    guard(b_.CreateICmpSLT(len, b_.getInt64(0)), n.count->loc, "negative array length %lld", {len});
+    if (opts_.runtimeChecks)
+      guard(b_.CreateICmpSLT(len, b_.getInt64(0)), n.count->loc, "negative array length %lld", {len});
     llvm::Value *arr = allocArray(elem, len);
     llvm::Value *data = b_.CreateExtractValue(arr, 0);
     genCountedLoop(b_.getInt64(0), len, "fill",
@@ -441,10 +506,10 @@ class CodeGen {
     if (n.op == BinOp::And || n.op == BinOp::Or) return genShortCircuit(n);
     llvm::Value *l = genExpr(*n.lhs);
     llvm::Value *r = genExpr(*n.rhs);
-    return genArith(n.op, l, r, n.lhs->type.kind, n.loc);
+    return genArith(n.op, l, r, n.lhs->type.kind, n.rhs.get(), n.loc);
   }
 
-  llvm::Value *genArith(BinOp op, llvm::Value *l, llvm::Value *r, Kind operand, Loc loc) {
+  llvm::Value *genArith(BinOp op, llvm::Value *l, llvm::Value *r, Kind operand, const Expr *rhs, Loc loc) {
     if (operand == Kind::Float) {
       switch (op) {
         case BinOp::Add: return b_.CreateFAdd(l, r);
@@ -462,9 +527,15 @@ class CodeGen {
       return nullptr;
     }
 
-    if (op == BinOp::Div || op == BinOp::Mod) {
-      guard(b_.CreateICmpEQ(r, llvm::ConstantInt::get(r->getType(), 0)), loc,
-            op == BinOp::Div ? "division by zero" : "modulo by zero");
+    if ((op == BinOp::Div || op == BinOp::Mod) && opts_.runtimeChecks) {
+      auto *lit = dynamic_cast<const IntLit *>(rhs);
+      if (lit && lit->value != 0) {
+        ++stats_.divisionChecksElided;
+      } else {
+        ++stats_.divisionChecks;
+        guard(b_.CreateICmpEQ(r, llvm::ConstantInt::get(r->getType(), 0)), loc,
+              op == BinOp::Div ? "division by zero" : "modulo by zero");
+      }
     }
 
     switch (op) {
@@ -487,49 +558,72 @@ class CodeGen {
   llvm::Value *genCall(const Call &n) {
     if (n.callee == "print") return genPrint(*n.args[0]);
     if (n.callee == "len") return b_.CreateExtractValue(genExpr(*n.args[0]), 1, "len");
+    if ((n.callee == "sqrt" || n.callee == "abs") && !mod_->getFunction(mangle(n.callee))) {
+      // Unit-polymorphic builtins lower straight to LLVM intrinsics (sqrtsd / andpd on x86).
+      auto id = n.callee == "sqrt" ? llvm::Intrinsic::sqrt : llvm::Intrinsic::fabs;
+      llvm::Function *fn = llvm::Intrinsic::getDeclaration(mod_.get(), id, {b_.getDoubleTy()});
+      return b_.CreateCall(fn, {genExpr(*n.args[0])});
+    }
     std::vector<llvm::Value *> args;
     for (auto &a : n.args) args.push_back(genExpr(*a));
     return b_.CreateCall(mod_->getFunction(mangle(n.callee)), args);
   }
 
-  // printf's conversion for a scalar, and the value to pass for it.
-  std::pair<const char *, llvm::Value *> formatScalar(Kind k, llvm::Value *v) {
-    switch (k) {
-      case Kind::Int: return {"%lld", v};
-      case Kind::Float: return {"%g", v};
-      case Kind::Bool:
-        return {"%s", b_.CreateSelect(v, b_.CreateGlobalStringPtr("true", "str.true"),
-                                      b_.CreateGlobalStringPtr("false", "str.false"))};
-      default: return {"%s", v};
-    }
-  }
-
+  // Format strings only ever contain identifiers and unit names, never a stray '%'.
   void printf(const std::string &fmt, std::vector<llvm::Value *> args = {}) {
     args.insert(args.begin(), b_.CreateGlobalStringPtr(fmt, "fmt"));
     b_.CreateCall(printf_, args);
   }
 
-  // Values print with their unit, e.g. "9.8 m/s^2"; arrays print as "[1, 2, 3] m".
-  llvm::Value *genPrint(const Expr &arg) {
-    llvm::Value *v = genExpr(arg);
-    const Type &t = arg.type;
-    std::string suffix = t.unit.dimensionless() ? "\n" : " " + t.unit.str() + "\n";
-    if (!t.array) {
-      auto [conv, val] = formatScalar(t.kind, v);
-      printf(std::string(conv) + suffix, {val});
-      return nullptr;
+  // Prints a value without a trailing newline. Scalars carry their unit ("9.8 m/s^2"),
+  // arrays put it after the brackets ("[1, 2] m"), structs print their fields.
+  void emitValue(const Type &t, llvm::Value *v, bool withUnit) {
+    std::string unit = t.unit.dimensionless() ? "" : " " + t.unit.str();
+    if (t.array) {
+      Type elem = t.element();
+      llvm::Type *ety = lowerElem(elem);
+      llvm::Value *data = b_.CreateExtractValue(v, 0);
+      llvm::Value *len = b_.CreateExtractValue(v, 1);
+      printf("[");
+      genCountedLoop(b_.getInt64(0), len, "print", [&](llvm::Value *i) {
+        auto *notFirst = newBlock("print.sep");
+        auto *item = newBlock("print.item");
+        b_.CreateCondBr(b_.CreateICmpEQ(i, b_.getInt64(0)), item, notFirst);
+        b_.SetInsertPoint(notFirst);
+        printf(", ");
+        b_.CreateBr(item);
+        b_.SetInsertPoint(item);
+        emitValue(elem, b_.CreateLoad(ety, b_.CreateGEP(ety, data, i)), false);
+      });
+      printf("]" + (withUnit ? unit : ""));
+      return;
     }
-    llvm::Type *ety = lowerScalar(t.kind);
-    llvm::Value *data = b_.CreateExtractValue(v, 0);
-    llvm::Value *len = b_.CreateExtractValue(v, 1);
-    printf("[");
-    genCountedLoop(b_.getInt64(0), len, "print", [&](llvm::Value *i) {
-      auto [conv, val] = formatScalar(t.kind, b_.CreateLoad(ety, b_.CreateGEP(ety, data, i)));
-      llvm::Value *sep = b_.CreateSelect(b_.CreateICmpEQ(i, b_.getInt64(0)), b_.CreateGlobalStringPtr("", "sep0"),
-                                         b_.CreateGlobalStringPtr(", ", "sep"));
-      printf(std::string("%s") + conv, {sep, val});
-    });
-    printf("]" + suffix);
+    switch (t.kind) {
+      case Kind::Int: printf("%lld" + (withUnit ? unit : ""), {v}); break;
+      case Kind::Float: printf("%g" + (withUnit ? unit : ""), {v}); break;
+      case Kind::Bool:
+        printf("%s", {b_.CreateSelect(v, b_.CreateGlobalStringPtr("true", "str.true"),
+                                      b_.CreateGlobalStringPtr("false", "str.false"))});
+        break;
+      case Kind::String: printf("%s", {v}); break;
+      case Kind::Struct: {
+        const StructDecl &decl = *structDecls_.at(t.structName);
+        printf(t.structName + " { ");
+        for (size_t i = 0; i < decl.fields.size(); ++i) {
+          if (i) printf(", ");
+          printf(decl.fields[i].name + ": ");
+          emitValue(decl.fields[i].type, b_.CreateExtractValue(v, (unsigned)i), true);
+        }
+        printf(" }");
+        break;
+      }
+      default: break;
+    }
+  }
+
+  llvm::Value *genPrint(const Expr &arg) {
+    emitValue(arg.type, genExpr(arg), true);
+    printf("\n");
     return nullptr;
   }
 
@@ -553,9 +647,9 @@ class CodeGen {
 
 }  // namespace
 
-std::unique_ptr<llvm::Module> generateIR(const Program &prog, llvm::LLVMContext &ctx,
-                                         const std::string &moduleName) {
-  auto mod = CodeGen(ctx, moduleName).run(prog);
+std::unique_ptr<llvm::Module> generateIR(const Program &prog, llvm::LLVMContext &ctx, const std::string &moduleName,
+                                         const CodeGenOptions &opts, CodeGenStats &stats) {
+  auto mod = CodeGen(ctx, moduleName, opts, stats).run(prog);
   if (llvm::verifyModule(*mod, &llvm::errs())) {
     llvm::errs() << "internal compiler error: generated invalid LLVM IR\n";
     return nullptr;
@@ -563,13 +657,43 @@ std::unique_ptr<llvm::Module> generateIR(const Program &prog, llvm::LLVMContext 
   return mod;
 }
 
-void optimize(llvm::Module &mod, int level) {
+std::unique_ptr<llvm::TargetMachine> createHostTargetMachine(llvm::Module &mod, int optLevel, std::string &err) {
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
+
+  std::string triple = llvm::sys::getDefaultTargetTriple();
+  const llvm::Target *target = llvm::TargetRegistry::lookupTarget(triple, err);
+  if (!target) return nullptr;
+
+  llvm::SubtargetFeatures features;
+  llvm::StringMap<bool> hostFeatures;
+  if (llvm::sys::getHostCPUFeatures(hostFeatures))
+    for (auto &f : hostFeatures) features.AddFeature(f.getKey(), f.getValue());
+
+  auto level = optLevel <= 0 ? llvm::CodeGenOptLevel::None
+               : optLevel == 1 ? llvm::CodeGenOptLevel::Less
+               : optLevel == 2 ? llvm::CodeGenOptLevel::Default
+                               : llvm::CodeGenOptLevel::Aggressive;
+  std::unique_ptr<llvm::TargetMachine> tm(target->createTargetMachine(
+      triple, llvm::sys::getHostCPUName(), features.getString(), llvm::TargetOptions(), llvm::Reloc::PIC_,
+      std::nullopt, level));
+  mod.setDataLayout(tm->createDataLayout());
+  mod.setTargetTriple(triple);
+  return tm;
+}
+
+void optimize(llvm::Module &mod, int level, llvm::TargetMachine *tm) {
   if (level <= 0) return;
   llvm::LoopAnalysisManager lam;
   llvm::FunctionAnalysisManager fam;
   llvm::CGSCCAnalysisManager cgam;
   llvm::ModuleAnalysisManager mam;
-  llvm::PassBuilder pb;
+  // A bare PassBuilder leaves loop and SLP vectorization off; clang turns both on at
+  // -O2 and above, so do the same.
+  llvm::PipelineTuningOptions pto;
+  pto.LoopVectorization = level >= 2;
+  pto.SLPVectorization = level >= 2;
+  llvm::PassBuilder pb(tm, pto);
   pb.registerModuleAnalyses(mam);
   pb.registerCGSCCAnalyses(cgam);
   pb.registerFunctionAnalyses(fam);
@@ -581,24 +705,7 @@ void optimize(llvm::Module &mod, int level) {
   pb.buildPerModuleDefaultPipeline(opt).run(mod, mam);
 }
 
-bool emitObject(llvm::Module &mod, const std::string &path, int optLevel, std::string &err) {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
-
-  std::string triple = llvm::sys::getDefaultTargetTriple();
-  const llvm::Target *target = llvm::TargetRegistry::lookupTarget(triple, err);
-  if (!target) return false;
-
-  llvm::TargetOptions options;
-  auto level = optLevel <= 0 ? llvm::CodeGenOptLevel::None
-               : optLevel == 1 ? llvm::CodeGenOptLevel::Less
-               : optLevel == 2 ? llvm::CodeGenOptLevel::Default
-                               : llvm::CodeGenOptLevel::Aggressive;
-  std::unique_ptr<llvm::TargetMachine> tm(
-      target->createTargetMachine(triple, "generic", "", options, llvm::Reloc::PIC_, std::nullopt, level));
-  mod.setDataLayout(tm->createDataLayout());
-  mod.setTargetTriple(triple);
-
+bool emitObject(llvm::Module &mod, const std::string &path, llvm::TargetMachine &tm, std::string &err) {
   std::error_code ec;
   llvm::raw_fd_ostream out(path, ec, llvm::sys::fs::OF_None);
   if (ec) {
@@ -606,13 +713,52 @@ bool emitObject(llvm::Module &mod, const std::string &path, int optLevel, std::s
     return false;
   }
   llvm::legacy::PassManager pm;
-  if (tm->addPassesToEmitFile(pm, out, nullptr, llvm::CodeGenFileType::ObjectFile)) {
+  if (tm.addPassesToEmitFile(pm, out, nullptr, llvm::CodeGenFileType::ObjectFile)) {
     err = "target cannot emit object files";
     return false;
   }
   pm.run(mod);
   out.flush();
   return true;
+}
+
+int runJIT(std::unique_ptr<llvm::Module> mod, std::unique_ptr<llvm::LLVMContext> ctx, std::string &err) {
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
+
+  auto jtmb = llvm::orc::JITTargetMachineBuilder::detectHost();
+  if (!jtmb) {
+    err = llvm::toString(jtmb.takeError());
+    return -1;
+  }
+  jtmb->setCodeGenOptLevel(llvm::CodeGenOptLevel::Default);
+  auto jit = llvm::orc::LLJITBuilder().setJITTargetMachineBuilder(std::move(*jtmb)).create();
+  if (!jit) {
+    err = llvm::toString(jit.takeError());
+    return -1;
+  }
+  // Resolve printf, malloc, exit, ... against the symbols already loaded in this process.
+  auto &dylib = (*jit)->getMainJITDylib();
+  auto gen = llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
+      (*jit)->getDataLayout().getGlobalPrefix());
+  if (!gen) {
+    err = llvm::toString(gen.takeError());
+    return -1;
+  }
+  dylib.addGenerator(std::move(*gen));
+
+  if (auto e = (*jit)->addIRModule(llvm::orc::ThreadSafeModule(std::move(mod), std::move(ctx)))) {
+    err = llvm::toString(std::move(e));
+    return -1;
+  }
+  auto sym = (*jit)->lookup("main");
+  if (!sym) {
+    err = llvm::toString(sym.takeError());
+    return -1;
+  }
+  int rc = sym->toPtr<int (*)()>()();
+  std::fflush(stdout);
+  return rc;
 }
 
 }  // namespace nova

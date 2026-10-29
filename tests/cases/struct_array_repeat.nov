@@ -1,0 +1,8 @@
+// expect: [Point { x: 0, y: 0 }, Point { x: 0, y: 0 }, Point { x: 0, y: 5 }]
+struct Point { x: int, y: int }
+fn main() -> int {
+    var ps = [Point(x: 0, y: 0); 3];
+    ps[2].y = 5;
+    print(ps);
+    return 0;
+}

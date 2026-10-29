@@ -1,0 +1,10 @@
+// expect: 2
+fn sqrt(x: float) -> float {
+    var g = x;
+    for i in 0..30 { g = (g + x / g) / 2.0; }
+    return g;
+}
+fn main() -> int {
+    print(sqrt(4.0));
+    return 0;
+}

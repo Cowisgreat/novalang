@@ -1,0 +1,9 @@
+// expect: 4 m
+unit m;
+unit s;
+unit kg;
+fn square(x: float<'u>) -> float<'u^2> { return x * x; }
+fn main() -> int {
+    4.0<m> |> square |> sqrt |> print;
+    return 0;
+}

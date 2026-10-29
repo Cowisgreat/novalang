@@ -26,19 +26,23 @@ struct Unit {
 
 // ---------------------------------------------------------------------- types
 
-enum class Kind { Unknown, Int, Float, Bool, String, Void };
+enum class Kind { Unknown, Int, Float, Bool, String, Void, Struct };
 
 struct Type {
   Kind kind = Kind::Unknown;
-  bool array = false;  // [kind<unit>]
-  Unit unit;           // only meaningful for int and float (or arrays of them)
+  bool array = false;      // [kind<unit>]
+  Unit unit;               // only meaningful for int and float (or arrays of them)
+  std::string structName;  // when kind == Struct
 
   Type() = default;
   Type(Kind k) : kind(k) {}  // NOLINT: implicit so Kind::Int converts naturally
 
   bool known() const { return kind != Kind::Unknown; }
   bool isNumeric() const { return !array && (kind == Kind::Int || kind == Kind::Float); }
-  bool isScalar() const { return !array && kind != Kind::Void && kind != Kind::Unknown; }
+  // Anything that can be stored in a variable, array element or struct field.
+  bool isValue() const { return !array && kind != Kind::Void && kind != Kind::Unknown; }
+  // Same representation, ignoring units.
+  bool sameShape(const Type &o) const { return kind == o.kind && array == o.array && structName == o.structName; }
   bool is(Kind k) const { return !array && kind == k && unit.dimensionless(); }
   Type element() const {
     Type t = *this;
@@ -50,9 +54,9 @@ struct Type {
     t.array = true;
     return t;
   }
-  bool operator==(const Type &o) const { return kind == o.kind && array == o.array && unit == o.unit; }
+  bool operator==(const Type &o) const { return sameShape(o) && unit == o.unit; }
   bool operator!=(const Type &o) const { return !(*this == o); }
-  std::string str() const;  // "int", "float<m/s>", "[int]"
+  std::string str() const;  // "int", "float<m/s>", "[int]", "Vec2"
 };
 
 const char *kindName(Kind k);
@@ -145,7 +149,29 @@ struct ArrayRepeat : Expr {
 // base[index]
 struct Index : Expr {
   ExprPtr base, index;
+  bool checked = true;  // cleared by sema when the index is provably in bounds
   Index(Expr *b, Expr *i) : base(b), index(i) {}
+};
+
+// base.field
+struct FieldAccess : Expr {
+  ExprPtr base;
+  std::string field;
+  int fieldIndex = -1;  // resolved by sema
+  FieldAccess(Expr *b, std::string f) : base(b), field(std::move(f)) {}
+};
+
+struct FieldInit {
+  std::string name;
+  ExprPtr value;
+  Loc loc;
+};
+
+// Name(field: value, ...)
+struct StructLit : Expr {
+  std::string name;
+  std::vector<FieldInit> fields;
+  explicit StructLit(std::string n) : name(std::move(n)) {}
 };
 
 // ----------------------------------------------------------------- statements
@@ -244,6 +270,19 @@ struct Function {
   std::unique_ptr<Block> body;
 };
 
+struct FieldDecl {
+  std::string name;
+  Type type;
+  Loc loc;
+};
+
+// struct Name { field: type, ... }
+struct StructDecl {
+  Loc loc;
+  std::string name;
+  std::vector<FieldDecl> fields;
+};
+
 // unit m;            (base unit, alias is null)
 // unit N = <kg*m/s^2>;
 struct UnitDecl {
@@ -254,6 +293,7 @@ struct UnitDecl {
 
 struct Program {
   std::vector<UnitDecl> units;
+  std::vector<StructDecl> structs;
   std::vector<std::unique_ptr<Function>> functions;
 };
 

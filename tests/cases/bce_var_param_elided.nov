@@ -1,0 +1,17 @@
+// A `var` array parameter whose elements are written but which is never rebound.
+// expect: [1, 2, 3, 4]
+// stats: bounds checks:   0 emitted, 2 elided
+fn bump(var xs: [int]) {
+    for i in 0..len(xs) {
+        xs[i] += i + 1;
+    }
+}
+fn main() {
+    var a = [0, 0, 0, 0];
+    bump(a);
+    var check = 0;
+    for i in 0..len(a) {
+        check += a[i];
+    }
+    print(a);
+}

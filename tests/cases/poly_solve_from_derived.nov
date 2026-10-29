@@ -1,0 +1,9 @@
+// expect: 1.41421 m
+unit m;
+unit s;
+unit kg;
+fn half_root(area: float<'u^2>) -> float<'u> { return sqrt(area) / 2.0; }
+fn main() -> int {
+    print(half_root(8.0<m^2>));
+    return 0;
+}

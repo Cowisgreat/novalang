@@ -1,0 +1,11 @@
+// expect: 1
+// expect: 99
+struct Point { x: int, y: int }
+fn main() -> int {
+    var a = Point(x: 1, y: 1);
+    var b = a;
+    b.x = 99;
+    print(a.x);
+    print(b.x);
+    return 0;
+}

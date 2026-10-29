@@ -1,0 +1,8 @@
+// error: cannot infer the unit variables of 'f'
+unit m;
+unit s;
+unit kg;
+fn f(x: float<'a*'b>) -> float<'a> { return 1.0 * (x / x) as float<'a>; }
+fn main() {
+    print(f(1.0<m>));
+}

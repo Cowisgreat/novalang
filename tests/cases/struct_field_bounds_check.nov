@@ -1,0 +1,7 @@
+// runtime-error: index 3 out of bounds for array of length 1
+struct Bag { items: [int] }
+fn main() -> int {
+    let b = Bag(items: [1]);
+    print(b.items[3]);
+    return 0;
+}

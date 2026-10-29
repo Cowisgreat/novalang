@@ -1,0 +1,9 @@
+// expect: 3 m
+unit m;
+unit s;
+unit kg;
+fn add(a: float<'u>, b: float<'u>) -> float<'u> { return a + b; }
+fn main() -> int {
+    print(add(1.0<m>, 2.0<m>));
+    return 0;
+}

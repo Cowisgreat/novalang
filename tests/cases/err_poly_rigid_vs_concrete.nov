@@ -1,0 +1,6 @@
+// error: operator '+' cannot be applied to float<'u> and float<m>
+unit m;
+unit s;
+unit kg;
+fn f(x: float<'u>) -> float<'u> { return x + 1.0<m>; }
+fn main() {}

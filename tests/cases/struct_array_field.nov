@@ -1,0 +1,10 @@
+// expect: Bag { items: [7, 2, 3] }
+// expect: 3
+struct Bag { items: [int] }
+fn main() -> int {
+    var b = Bag(items: [1, 2, 3]);
+    b.items[0] = 7;
+    print(b);
+    print(len(b.items));
+    return 0;
+}

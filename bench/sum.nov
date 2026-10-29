@@ -1,0 +1,23 @@
+// Array reduction: the kind of loop where a bounds check per element can block
+// vectorization. `sum`'s index is provably in range, so its check is elided.
+fn sum(xs: [int]) -> int {
+    var s = 0;
+    for i in 0..len(xs) {
+        s += xs[i];
+    }
+    return s;
+}
+
+fn main() {
+    let n = 1000000;
+    var data = [0; n];
+    for i in 0..n {
+        data[i] = i % 7;
+    }
+    var total = 0;
+    for r in 0..2000 {
+        data[r % n] += 1;          // change the input so no pass can hoist the sum
+        total += sum(data);
+    }
+    print(total);
+}

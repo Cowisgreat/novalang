@@ -6,38 +6,51 @@ unit kg;
 unit N = <kg*m/s^2>;
 unit J = <N*m>;
 
-fn kinetic_energy(mass: float<kg>, v: float<m/s>) -> float<J> {
-    return 0.5 * mass * v * v;
+struct Vec2 { x: float<m>, y: float<m> }
+struct Projectile { pos: Vec2, vx: float<m/s>, vy: float<m/s>, mass: float<kg> }
+
+// Unit-polymorphic helpers: 'u is inferred at each call site.
+fn square(x: float<'u>) -> float<'u^2> { return x * x; }
+fn hypot(a: float<'u>, b: float<'u>) -> float<'u> { return sqrt(square(a) + square(b)); }
+
+fn kinetic_energy(p: Projectile) -> float<J> {
+    return 0.5 * p.mass * (square(p.vx) + square(p.vy));
 }
 
-// Time for an object to fall `h` meters from rest, via Newton's method for sqrt.
-fn fall_time(h: float<m>, g: float<m/s^2>) -> float<s> {
-    let t2 = 2.0 * h / g;           // float<s^2>
-    var t = 1.0<s>;
-    for i in 0..30 {
-        t = (t + t2 / t) / 2.0;
+// Simulates a projectile with explicit Euler steps until it lands.
+fn simulate(var p: Projectile, g: float<m/s^2>, dt: float<s>) -> Projectile {
+    while p.pos.y >= 0.0<m> {
+        p.pos.x += p.vx * dt;
+        p.pos.y += p.vy * dt;
+        p.vy -= g * dt;
     }
-    return t;
+    return p;
 }
 
 fn main() {
     let g = 9.81<m/s^2>;
-    let mass = 70.0<kg>;
+    let start = Projectile(pos: Vec2(x: 0.0<m>, y: 0.0<m>), vx: 30.0<m/s>, vy: 40.0<m/s>, mass: 0.145<kg>);
 
-    let t = fall_time(20.0<m>, g);
-    print("fall time from 20 m:");
-    print(t);
+    print("launch speed:");
+    hypot(start.vx, start.vy) |> print;           // 50 m/s
 
-    let impact = g * t;             // inferred as float<m/s>
-    print("impact speed:");
-    print(impact);
+    print("launch energy:");
+    kinetic_energy(start) |> print;               // in kg*m^2/s^2 (joules)
 
-    print("kinetic energy at impact:");
-    kinetic_energy(mass, impact) |> print;
+    let landed = simulate(start, g, 0.001<s>);
+    print("range:");
+    print(landed.pos.x);
 
+    let flight_time = 2.0 * start.vy / g;         // inferred as float<s>
+    print("analytic flight time:");
+    print(flight_time);
+
+    let w: float<N> = start.mass * g;             // N expands to kg*m/s^2
     print("weight:");
-    let w: float<N> = mass * g;
     print(w);
 
-    // let oops = t + impact;   // error: operator '+' cannot be applied to float<s> and float<m/s>
+    // Uncomment any of these to see the unit checker reject it:
+    // let oops = flight_time + landed.pos.x;     // float<s> + float<m>
+    // let bad = sqrt(landed.pos.x);              // m has no exact square root
+    // let e: float<J> = start.mass * start.vx;   // kg*m/s is momentum, not energy
 }

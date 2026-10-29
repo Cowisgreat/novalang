@@ -1,0 +1,5 @@
+// error: field 'x' of 'Point' has type int, got float
+struct Point { x: int, y: int }
+fn main() {
+    let p = Point(x: 1.5, y: 2);
+}

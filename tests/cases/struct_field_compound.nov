@@ -1,0 +1,8 @@
+// expect: 42
+struct Point { x: int, y: int }
+fn main() -> int {
+    var p = Point(x: 1, y: 2);
+    p.y *= 21;
+    print(p.y);
+    return 0;
+}

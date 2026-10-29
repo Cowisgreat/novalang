@@ -1,0 +1,12 @@
+// expect: 1
+// expect: 1
+// expect: 1
+// stats: bounds checks:   1 emitted, 0 elided
+fn main() -> int {
+    let a = [1, 2, 3];
+    for i in 0..len(a) {
+        let i = 0;
+        print(a[i]);
+    }
+    return 0;
+}

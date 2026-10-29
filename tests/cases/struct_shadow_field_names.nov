@@ -1,0 +1,8 @@
+// expect: Point { x: 5, y: 10 }
+struct Point { x: int, y: int }
+fn main() -> int {
+    let x = 5;
+    let p = Point(x: x, y: x * 2);
+    print(p);
+    return 0;
+}

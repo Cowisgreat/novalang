@@ -1,0 +1,5 @@
+// error: missing field 'y' in 'Point' literal
+struct Point { x: int, y: int }
+fn main() {
+    let p = Point(x: 1);
+}

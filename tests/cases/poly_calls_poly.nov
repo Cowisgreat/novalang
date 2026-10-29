@@ -1,0 +1,10 @@
+// expect: 5 m
+unit m;
+unit s;
+unit kg;
+fn square(x: float<'u>) -> float<'u^2> { return x * x; }
+fn hypot(a: float<'u>, b: float<'u>) -> float<'u> { return sqrt(square(a) + square(b)); }
+fn main() -> int {
+    print(hypot(3.0<m>, 4.0<m>));
+    return 0;
+}

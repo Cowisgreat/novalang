@@ -1,0 +1,10 @@
+// expect: 6 m*s
+unit m;
+unit s;
+unit kg;
+fn g(x: float<'v>, y: float<'u>) -> float<'v*'u> { return x * y; }
+fn f(a: float<'u>, b: float<'v>) -> float<'u*'v> { return g(a, b); }
+fn main() -> int {
+    print(f(2.0<m>, 3.0<s>));
+    return 0;
+}

@@ -1,0 +1,8 @@
+// error: unknown struct 'Nope'
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let p = Nope(x: 1);
+    return 0;
+}

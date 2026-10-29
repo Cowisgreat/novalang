@@ -73,7 +73,7 @@ static nova::Unit *parseUnit(const char *text, int len) {
 
 DIGIT   [0-9]
 IDENT   [a-zA-Z_][a-zA-Z0-9_]*
-UFACTOR ({IDENT}|1)(\^-?{DIGIT}+)?
+UFACTOR ('?{IDENT}|1)(\^-?{DIGIT}+)?
 
 %%
 
@@ -100,6 +100,7 @@ UFACTOR ({IDENT}|1)(\^-?{DIGIT}+)?
 "continue"              { return CONTINUE; }
 "as"                    { return AS; }
 "unit"                  { return UNIT_KW; }
+"struct"                { return STRUCT; }
 "true"                  { yylval.boolVal = true; return BOOL_LIT; }
 "false"                 { yylval.boolVal = false; return BOOL_LIT; }
 "int"                   { yylval.kind = nova::Kind::Int; return TYPE; }
@@ -108,7 +109,8 @@ UFACTOR ({IDENT}|1)(\^-?{DIGIT}+)?
 "string"                { yylval.kind = nova::Kind::String; return TYPE; }
 "void"                  { yylval.kind = nova::Kind::Void; return TYPE; }
 
- /* A unit annotation is written with no spaces inside, e.g. 9.8<m/s^2> or float<m>. */
+ /* A unit annotation is written with no spaces inside, e.g. 9.8<m/s^2> or float<m>.
+    Names starting with ' are unit variables, e.g. float<'u^2>. */
 "<"{UFACTOR}([*/]{UFACTOR})*">" { yylval.unit = parseUnit(yytext, yyleng); return UNIT_ANNOT; }
 
 {DIGIT}+"."{DIGIT}+([eE][+-]?{DIGIT}+)? { yylval.floatVal = std::stod(yytext); return FLOAT_LIT; }
@@ -140,7 +142,7 @@ UFACTOR ({IDENT}|1)(\^-?{DIGIT}+)?
 "*="                    { yylval.binop = nova::BinOp::Mul; return COMPOUND; }
 "/="                    { yylval.binop = nova::BinOp::Div; return COMPOUND; }
 "%="                    { yylval.binop = nova::BinOp::Mod; return COMPOUND; }
-[-+*/%<>=!(){}\[\],;:]  { return yytext[0]; }
+[-+*/%<>=!(){}\[\],;:.] { return yytext[0]; }
 
 .                       { nova::diag().error({yylineno, yycolumn - 1},
                                              std::string("unexpected character '") + yytext + "'"); }

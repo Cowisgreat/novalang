@@ -1,0 +1,8 @@
+// error: field 'x' of 'Vec2' has type float<m>, got float<s>
+unit m;
+unit s;
+unit kg;
+struct Vec2 { x: float<m>, y: float<m> }
+fn main() {
+    let v = Vec2(x: 1.0<s>, y: 1.0<m>);
+}

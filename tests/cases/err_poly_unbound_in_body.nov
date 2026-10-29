@@ -1,0 +1,9 @@
+// error: unit variable 'w is not bound by the enclosing function's parameters
+unit m;
+unit s;
+unit kg;
+fn f(x: float) -> float {
+    let y: float<'w> = 1.0;
+    return x;
+}
+fn main() {}

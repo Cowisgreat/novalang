@@ -1,0 +1,9 @@
+// error: cannot access field 'x' on a value of type int
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let n = 4;
+    print(n.x);
+    return 0;
+}

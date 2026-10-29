@@ -1,0 +1,9 @@
+// error: let speed = 1.0<m> + 2.0<s>;
+// error: ^
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    let speed = 1.0<m> + 2.0<s>;
+    return 0;
+}

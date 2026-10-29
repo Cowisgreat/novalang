@@ -1,0 +1,12 @@
+// expect: 8 m^3
+unit m;
+unit s;
+unit kg;
+fn cube(x: float<'u>) -> float<'u^3> {
+    let sq: float<'u^2> = x * x;
+    return sq * x;
+}
+fn main() -> int {
+    print(cube(2.0<m>));
+    return 0;
+}

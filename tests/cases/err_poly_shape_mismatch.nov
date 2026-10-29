@@ -1,0 +1,8 @@
+// error: argument 1 of 'f' expects float<'u>, got int<m>
+unit m;
+unit s;
+unit kg;
+fn f(x: float<'u>) -> float<'u> { return x; }
+fn main() {
+    print(f(1<m>));
+}

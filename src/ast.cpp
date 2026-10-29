@@ -13,6 +13,7 @@ const char *kindName(Kind k) {
     case Kind::Bool: return "bool";
     case Kind::String: return "string";
     case Kind::Void: return "void";
+    case Kind::Struct: return "struct";
     case Kind::Unknown: break;
   }
   return "<unknown>";
@@ -52,7 +53,7 @@ std::string Unit::str() const {
 }
 
 std::string Type::str() const {
-  std::string s = kindName(kind);
+  std::string s = kind == Kind::Struct ? structName : kindName(kind);
   if (!unit.dimensionless()) s += "<" + unit.str() + ">";
   return array ? "[" + s + "]" : s;
 }
@@ -85,9 +86,41 @@ const char *binOpName(BinOp op) {
   return "?";
 }
 
+void Diagnostics::setSource(const std::string &text) {
+  lines_.clear();
+  std::string line;
+  for (char c : text) {
+    if (c == '\n') {
+      lines_.push_back(line);
+      line.clear();
+    } else {
+      line += c;
+    }
+  }
+  lines_.push_back(line);
+}
+
 void Diagnostics::error(Loc loc, const std::string &msg) {
   ++errors_;
-  std::cerr << file_ << ":" << loc.line << ":" << loc.col << ": error: " << msg << "\n";
+  report("error", loc, msg);
+}
+
+void Diagnostics::note(Loc loc, const std::string &msg) { report("note", loc, msg); }
+
+// Prints clang/rustc-style diagnostics:
+//   prog.nov:4:18: error: operator '+' cannot be applied to float<m> and float<s>
+//       4 |     let x = d + t;
+//         |               ^
+void Diagnostics::report(const char *severity, Loc loc, const std::string &msg) {
+  std::cerr << file_ << ":" << loc.line << ":" << loc.col << ": " << severity << ": " << msg << "\n";
+  if (loc.line < 1 || loc.line > (int)lines_.size()) return;
+  const std::string &src = lines_[loc.line - 1];
+  std::string num = std::to_string(loc.line);
+  std::string gutter(num.size(), ' ');
+  std::cerr << "  " << num << " | " << src << "\n";
+  std::string pad;
+  for (int i = 0; i + 1 < loc.col && i < (int)src.size(); ++i) pad += src[i] == '\t' ? '\t' : ' ';
+  std::cerr << "  " << gutter << " | " << pad << "^\n";
 }
 
 Diagnostics &diag() {
@@ -140,6 +173,16 @@ void dump(const Expr *e, int d) {
     std::cout << "Index\n";
     dump(n->base.get(), d + 1);
     dump(n->index.get(), d + 1);
+  } else if (auto *n = dynamic_cast<const FieldAccess *>(e)) {
+    std::cout << "Field ." << n->field << "\n";
+    dump(n->base.get(), d + 1);
+  } else if (auto *n = dynamic_cast<const StructLit *>(e)) {
+    std::cout << "StructLit " << n->name << "\n";
+    for (auto &f : n->fields) {
+      indent(d + 1);
+      std::cout << f.name << ":\n";
+      dump(f.value.get(), d + 2);
+    }
   }
 }
 
@@ -198,6 +241,10 @@ void dump(const Stmt *s, int d) {
 void dumpAst(const Program &prog) {
   for (auto &u : prog.units)
     std::cout << "Unit " << u.name << (u.alias ? " = " + u.alias->str() : "") << "\n";
+  for (auto &s : prog.structs) {
+    std::cout << "Struct " << s.name << "\n";
+    for (auto &f : s.fields) std::cout << "  " << f.name << ": " << f.type.str() << "\n";
+  }
   for (auto &f : prog.functions) {
     std::cout << "Function " << f->name << "(";
     for (size_t i = 0; i < f->params.size(); ++i) {

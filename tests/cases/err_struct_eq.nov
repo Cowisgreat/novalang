@@ -1,0 +1,5 @@
+// error: operator '==' cannot be applied to Point and Point
+struct Point { x: int, y: int }
+fn main() {
+    print(Point(x: 1, y: 1) == Point(x: 1, y: 1));
+}

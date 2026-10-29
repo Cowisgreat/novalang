@@ -1,0 +1,10 @@
+// expect: 2.5 kg
+// expect: 3
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(abs(-2.5<kg>));
+    print(abs(3.0));
+    return 0;
+}

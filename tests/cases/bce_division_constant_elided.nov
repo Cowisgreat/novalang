@@ -1,0 +1,9 @@
+// expect: 5
+// expect: 1
+// stats: division checks: 0 emitted, 2 elided
+fn main() -> int {
+    let x = 10;
+    print(x / 2);
+    print(x % 3);
+    return 0;
+}

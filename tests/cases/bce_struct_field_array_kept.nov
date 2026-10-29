@@ -1,0 +1,9 @@
+// expect: 1
+// expect: 2
+// stats: bounds checks:   1 emitted, 0 elided
+struct Bag { items: [int] }
+fn main() -> int {
+    let b = Bag(items: [1, 2]);
+    for i in 0..len(b.items) { print(b.items[i]); }
+    return 0;
+}

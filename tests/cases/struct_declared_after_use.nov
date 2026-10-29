@@ -1,0 +1,5 @@
+// expect: Late { v: 1 }
+fn main() {
+    print(Late(v: 1));
+}
+struct Late { v: int }

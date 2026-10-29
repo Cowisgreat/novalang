@@ -1,0 +1,13 @@
+// expect: 3 s
+unit m;
+unit s;
+unit kg;
+fn mean(xs: [float<'u>]) -> float<'u> {
+    var total = 0.0 * xs[0];
+    for x in xs { total += x; }
+    return total / (len(xs) as float);
+}
+fn main() -> int {
+    print(mean([1.0<s>, 2.0<s>, 6.0<s>]));
+    return 0;
+}

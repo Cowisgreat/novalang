@@ -1,0 +1,11 @@
+// expect: 6
+// stats: bounds checks:   0 emitted, 1 elided
+fn sum(xs: [int]) -> int {
+    var s = 0;
+    for i in 0..len(xs) { s += xs[i]; }
+    return s;
+}
+fn main() -> int {
+    print(sum([1, 2, 3]));
+    return 0;
+}

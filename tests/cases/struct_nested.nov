@@ -1,0 +1,11 @@
+// expect: Line { a: Point { x: 0, y: 0 }, b: Point { x: 6, y: 4 } }
+// expect: 4
+struct Point { x: int, y: int }
+struct Line { a: Point, b: Point }
+fn main() -> int {
+    var l = Line(a: Point(x: 0, y: 0), b: Point(x: 3, y: 4));
+    l.b.x = 6;
+    print(l);
+    print(l.b.y);
+    return 0;
+}

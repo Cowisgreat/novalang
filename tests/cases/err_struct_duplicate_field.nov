@@ -1,0 +1,3 @@
+// error: duplicate field 'v' in 'S'
+struct S { v: int, v: int }
+fn main() {}

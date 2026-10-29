@@ -1,0 +1,11 @@
+// The start `k + 1` uses a variable that is not a bounded loop index, so it may be
+// negative and a[j] must keep its check.
+// expect: 3
+// stats: bounds checks:   1 emitted, 0 elided
+fn main() {
+    let a = [1, 2, 3];
+    let k = 1;
+    for j in k + 1..len(a) {
+        print(a[j]);
+    }
+}

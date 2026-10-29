@@ -1,0 +1,13 @@
+// expect: Point { x: 6, y: 2 }
+// expect: Point { x: 1, y: 2 }
+struct Point { x: int, y: int }
+fn moved(var p: Point) -> Point {
+    p.x += 5;
+    return p;
+}
+fn main() -> int {
+    let p = Point(x: 1, y: 2);
+    print(moved(p));
+    print(p);
+    return 0;
+}

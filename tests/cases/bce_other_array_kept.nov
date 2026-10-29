@@ -1,0 +1,9 @@
+// expect: 10
+// expect: 20
+// stats: bounds checks:   1 emitted, 0 elided
+fn main() -> int {
+    let a = [1, 2, 3];
+    let b = [10, 20];
+    for i in 0..len(a) { if i < 2 { print(b[i]); } }
+    return 0;
+}

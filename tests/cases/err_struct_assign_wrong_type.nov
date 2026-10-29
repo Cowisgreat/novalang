@@ -1,0 +1,7 @@
+// error: cannot assign a value of type Q to 'p' of type Point
+struct Point { x: int, y: int }
+struct Q { x: int, y: int }
+fn main() {
+    var p = Point(x: 1, y: 2);
+    p = Q(x: 1, y: 2);
+}

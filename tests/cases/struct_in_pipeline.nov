@@ -1,0 +1,7 @@
+// expect: 6
+struct Point { x: int, y: int }
+fn area(p: Point) -> int { return p.x * p.y; }
+fn main() -> int {
+    Point(x: 2, y: 3) |> area |> print;
+    return 0;
+}

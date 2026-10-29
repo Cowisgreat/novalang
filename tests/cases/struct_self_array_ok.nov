@@ -1,0 +1,6 @@
+// expect: 1
+struct Node { v: int, kids: [Node] }
+fn main() -> int {
+    print(1);
+    return 0;
+}

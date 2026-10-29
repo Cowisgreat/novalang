@@ -1,0 +1,7 @@
+// error: syntax error
+struct Point { x: int, y: int }
+unit m;
+unit s;
+unit kg;
+fn f(p: Point<m>) {}
+fn main() {}

@@ -1,0 +1,11 @@
+// The body rebinds `a` to a shorter array, so a[i] must stay checked.
+// expect: 1
+// runtime-error: index 1 out of bounds for array of length 1
+// stats: bounds checks:   1 emitted, 0 elided
+fn main() {
+    var a = [1, 2, 3];
+    for i in 0..len(a) {
+        print(a[i]);
+        a = [9];
+    }
+}

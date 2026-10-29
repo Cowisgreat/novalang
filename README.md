@@ -1,240 +1,177 @@
 # NovaLang
 
-A statically typed programming language with **units of measure checked at compile time**.
-It is compiled to native code by a full pipeline written in C++: a **Flex** lexer, a **Bison**
-parser, a semantic analyzer with type and dimension inference, and an **LLVM** backend that turns
-`.nov` source files into `.out` executables.
+A statically typed language with **units of measure in the type system**, compiled to native
+code through LLVM. The compiler is written in C++ (about 3,000 lines) with a Flex lexer, a
+Bison parser, a semantic analyzer that does type and unit inference, and an LLVM backend that
+emits native executables or runs programs in memory with the ORC JIT.
 
 ```nova
 unit m;
 unit s;
 
-fn speed(distance: float<m>, time: float<s>) -> float<m/s> {
-    return distance / time;
-}
+struct Vec2 { x: float<m>, y: float<m> }
+
+fn square(x: float<'u>) -> float<'u^2> { return x * x; }          // unit-polymorphic
+fn length(v: Vec2) -> float<m> { return sqrt(square(v.x) + square(v.y)); }
 
 fn main() {
-    let v = speed(100.0<m>, 9.58<s>);
-    print(v);                        // 10.4384 m/s
-    // print(v + 1.0<m>);            // compile error: units do not match
+    let v = Vec2(x: 3.0<m>, y: 4.0<m>);
+    let t = 2.0<s>;
+    print(length(v) / t);        // 2.5 m/s
+    // print(length(v) + t);     // error: operator '+' cannot be applied to float<m> and float<s>
+    // print(sqrt(t));           // error: s has no exact square root
 }
 ```
 
-## What makes it different
+## Highlights
 
-- **Dimensional analysis in the type system.** Physical units are part of a number's type.
-  `+`, `-` and comparisons require matching units; `*` and `/` combine them
-  (`float<m/s> * float<s>` is `float<m>`), and units that cancel out disappear. Mixing up meters
-  and seconds is a compile error, like the bug that destroyed the Mars Climate Orbiter.
-  Units are erased before code generation, so they cost nothing at runtime.
-- **Runtime safety with source locations.** Array accesses are bounds-checked and integer
-  division by zero is caught. Either one stops the program with a precise location and exit
-  code 101, instead of undefined behavior:
-  `runtime error at sort.nov:37:15: index 7 out of bounds for array of length 7`.
-  Division by a literal zero is caught at compile time.
-- **Pipeline operator.** `data |> normalize |> sum(0) |> print;` reads left to right and
-  desugars to `print(sum(normalize(data), 0))`.
+- **Dimensional analysis at compile time.** `+`, `-` and comparisons require matching units.
+  `*` and `/` combine them, and units that cancel disappear. Units are erased before code
+  generation, so they cost nothing at runtime.
+- **Unit polymorphism with inference.** Functions can be generic over units:
+  `fn sqrt(x: float<'u^2>) -> float<'u>`. At each call, the checker solves for `'u` over
+  integer exponents, so `sqrt` of an area gives a length and `sqrt` of a length is a compile
+  error. Because units are erased, one compiled function serves every instantiation.
+- **Structs** with value semantics, nested field updates (`bodies[i].vel.x -= dv`), and
+  arrays of structs.
+- **Memory-safe arrays.** Array accesses are bounds-checked and integer division by zero is
+  caught, with the source location reported and exit code 101. The front end proves many
+  checks redundant (`for i in 0..len(a)`, triangular loops, and arrays whose binding is
+  never reassigned) and removes them.
+- **Two backends:** ahead-of-time native executables, or `--run` to JIT-compile and run in
+  memory.
+- **Performance at parity with C.** NovaLang matches clang on the array kernels and is about
+  8% behind on N-body (see [Benchmarks](#benchmarks)).
+- **Diagnostics** in the style of clang and rustc, showing the source line and a caret.
+- **371 test programs**, run ahead-of-time and through the JIT, at `-O0` and `-O2`, in CI.
+
+The design decisions and trade-offs are written up in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Building
 
-Requirements: a C++17 compiler, CMake ≥ 3.16, LLVM 18 (dev headers), Flex and Bison.
+Requirements: a C++17 compiler, CMake ≥ 3.16, LLVM 18 (with its development headers), Flex
+and Bison.
 
 ```bash
-# Ubuntu / Debian
-sudo apt-get install -y llvm-18-dev flex bison cmake
-
+sudo apt-get install -y llvm-18-dev flex bison cmake      # Ubuntu / Debian
 cmake -S . -B build -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm
 cmake --build build -j
 ```
 
-This produces the compiler at `build/novac`.
-
 ## Usage
 
 ```bash
-./build/novac examples/physics.nov             # -> physics.out
-./build/novac examples/physics.nov -o phys -O2 # optimized, custom output name
-./physics.out
+./build/novac examples/physics.nov --run          # JIT: compile and run in memory
+./build/novac examples/physics.nov -O2            # writes physics.out
+./build/novac bench/nbody.nov -O2 --stats         # report runtime checks emitted / elided
 ```
 
 | Flag | Effect |
 | --- | --- |
-| `-o <file>` | output executable (default: `<input>.out`) |
-| `-O0` … `-O3` | LLVM optimization level (default `-O0`) |
-| `--emit-llvm` | print the generated LLVM IR instead of compiling |
-| `--emit-ast` | print the parsed syntax tree |
-| `--check` | parse and type-check only |
+| `-o <file>` | Output executable (default: `<input>.out`). |
+| `-O0` … `-O3` | Optimization level (default `-O0`). |
+| `--run` | JIT-compile and run without writing a file. |
+| `--emit-llvm` / `--emit-ast` | Print the LLVM IR or the syntax tree. |
+| `--check` | Parse and type-check only. |
+| `--stats` | Count the bounds and division checks that were emitted and elided. |
+| `--no-bce` | Keep every bounds check (turns off front-end elimination). |
+| `--unchecked` | Omit all runtime checks (for measuring what they cost). |
 
-## The language
+## Language tour
 
-### Types and variables
-
-`int` (64-bit), `float` (64-bit), `bool`, `string`, `void`, and arrays `[T]`. `let` bindings are
-immutable and `var` bindings are mutable. Type annotations are optional; when one is left out,
-the type is inferred from the initializer.
+### Basics
 
 ```nova
-let pi = 3.14159;          // float
-let name: string = "nova";
-var count = 0;             // int, mutable
+let pi = 3.14159;              // immutable; type inferred as float
+var count = 0;                 // mutable int
 count += 1;
+let label: string = "nova";
+let half = count as float / 2.0;   // explicit casts, no implicit conversion
 ```
 
-There are no implicit conversions; `as` converts between `int`, `float` and `bool`.
+Types are `int`, `float`, `bool`, `string`, structs, and arrays `[T]`.
 
-### Units of measure
+Control flow is `if` / `else if` / `else`, `while`, `for i in a..b` (end exclusive),
+`for x in array`, `break`, `continue` and `return`.
 
-Declare base units, or aliases that expand into base units, at the top level:
+Calls can be chained left to right with the pipeline operator: `x |> f(y)` means `f(x, y)`.
+
+### Units
 
 ```nova
 unit m;
 unit s;
 unit kg;
-unit N = <kg*m/s^2>;
-unit J = <N*m>;
+unit N = <kg*m/s^2>;           // alias, expanded to base units
+
+let g = 9.81<m/s^2>;
+let w: float<N> = 70.0<kg> * g;
+print(w);                      // 686.7 kg*m/s^2
+let raw = w as float;          // strip the unit (explicit)
 ```
 
-Attach a unit to a literal or a type with `<...>`, written without spaces: `9.81<m/s^2>`,
-`float<J>`, `int<s>`, `[float<m>]`. A unit expression is a product of units with optional integer
-exponents: `kg*m^2/s^2`, `1/s`, `m*s^-1`.
-
-| Expression | Rule |
-| --- | --- |
-| `a + b`, `a - b`, `a < b`, `a == b` | units must be identical |
-| `a * b`, `a / b` | units multiply / divide (`m / s` → `m/s`, `m / m` → dimensionless) |
-| `a % b` | `int` only, identical units |
-| `-a` | unit preserved |
-| `x as float` | strips the unit (explicit escape hatch) |
-| `x as float<m>` | attaches a unit |
-
-Values print with their unit: `print(2.0<N>)` → `2 kg*m/s^2`. Aliases are always shown in
-base units.
-
-### Arrays
+### Unit polymorphism
 
 ```nova
-let primes = [2, 3, 5, 7];
-var grid = [0.0; n];          // n copies of 0.0; n can be computed at runtime
-grid[2] = 1.5;
-print(len(primes));           // 4
-for p in primes { print(p); }
-print(primes);                // [2, 3, 5, 7]
+fn mean(xs: [float<'u>]) -> float<'u> { ... }
+fn ratio(a: float<'a>, b: float<'b>) -> float<'a/'b> { return a / b; }
+
+mean([1.0<s>, 2.0<s>])         // float<s>
+ratio(10.0<m>, 2.0<s>)         // float<m/s>
+sqrt(16.0<m^2>)                // float<m>   (builtin: float<'u^2> -> float<'u>)
 ```
 
-Arrays are reference values (a pointer and a length), so passing one to a function does not copy
-it. Writing to an element requires a `var` binding. For a parameter, that means declaring it
-`var`:
+### Structs and arrays
 
 ```nova
-fn fill(var xs: [int], value: int) {
-    for i in 0..len(xs) { xs[i] = value; }
+struct Body { pos: Vec2, vel: float<m/s>, mass: float<kg> }
+
+var bodies = [Body(pos: Vec2(x: 0.0<m>, y: 0.0<m>), vel: 1.0<m/s>, mass: 2.0<kg>); 10];
+bodies[3].pos.x += 5.0<m>;     // nested field update through a GEP path
+print(len(bodies));
+for b in bodies { print(b.mass); }
+
+fn scale(var xs: [float<m>], k: float) {    // `var` parameter: the function may write elements
+    for i in 0..len(xs) { xs[i] *= k; }     // bounds check proven redundant and removed
 }
 ```
 
-### Functions
-
-Functions declare their parameter types and an optional return type (the default is `void`).
-They can be called before they are defined, and they can be recursive or mutually recursive.
-
-```nova
-fn area(w: float<m>, h: float<m>) -> float<m^2> { return w * h; }
-fn greet() { print("hi"); }
-```
-
-`x |> f(a, b)` is `f(x, a, b)`, and `x |> f` is `f(x)`. The pipeline has the lowest precedence of
-any operator.
-
-### Control flow and operators
-
-- Control flow: `if` / `else if` / `else`, `while`, `for i in start..end` (end exclusive),
-  `for x in array`, `break`, `continue`, `return`.
-- Operators: `+ - * / %`, `< <= > >= == !=`, short-circuiting `&& ||`, unary `-` and `!`, and
-  compound assignment `+= -= *= /= %=`.
-- Builtins: `print(x)` prints any value followed by a newline. `len(a)` returns an array's length.
-- Program entry: `fn main() -> int` (the return value becomes the exit code) or `fn main()`.
-
-### Compile-time errors
-
-The semantic analyzer reports every error it finds, with file, line and column:
+### Errors
 
 ```text
-prog.nov:6:18: error: operator '+' cannot be applied to float<m> and float<s> (units do not match)
-prog.nov:9:5: error: cannot assign to immutable variable 'x' (declare it with 'var' to make it mutable)
-prog.nov:12:12: error: returning float<m*s> from a function declared to return float<m/s>
-3 error(s) generated.
+prog.nov:6:16: error: argument 1 of 'sqrt' expects float<'u^2>, got float<m> (m has no exact square root)
+  6 |     print(sqrt(9.0<m>));
+    |                ^
+runtime error at sort.nov:37:15: index 7 out of bounds for array of length 7
 ```
 
-It checks for:
+## Benchmarks
 
-- undeclared names and unknown units
-- type and unit mismatches
-- assignment to immutable bindings
-- wrong argument counts or types
-- `break` or `continue` outside a loop
-- compound assignments that would change a variable's unit (`d *= 2.0<m>` on a `float<m>`)
-- functions that can finish without returning a value
+Produced by `bench/run.sh`. C is built with clang `-O2 -march=native`, so both compilers use
+the same LLVM backend; the times are the best of three runs.
 
-## Architecture
+| | clang -O2 | Nova -O2 | Nova -O2 unchecked | Nova -O0 | -O0 `--no-bce` | -O0 unchecked |
+| --- | --- | --- | --- | --- | --- | --- |
+| nbody | 2.38s | 2.57s | 2.52s | 8.05s | 12.91s | 7.62s |
+| sum | 0.59s | 0.59s | 0.61s | 2.75s | 3.25s | 2.65s |
+| pairs | 0.40s | 0.41s | 0.41s | 2.82s | 4.58s | 2.72s |
 
-```text
- .nov source
-     │
-     ▼
- lexer.l   (Flex)    tokens with line/column; unit annotations are parsed into factor maps
-     │
-     ▼
- parser.y  (Bison)   LALR(1) grammar (no conflicts) → AST (ast.h); `|>` is desugared here
-     │
-     ▼
- sema.cpp            scopes, type checking & inference, unit resolution and dimensional
-     │               analysis, return-path analysis, constant division-by-zero detection
-     ▼
- codegen.cpp (LLVM)  AST → LLVM IR (units erased) with bounds/zero checks
-     │               → optional O1–O3 pipeline → native object file
-     ▼
- cc (system linker)  → executable .out
-```
+- At `-O2`, the runtime safety checks cost about 0–2%.
+- At `-O0` (and in the JIT), front-end bounds-check elimination makes programs about 1.6×
+  faster and brings them within a few percent of having no checks at all.
+- The N-body version uses units throughout (positions in AU, time in years). It prints the
+  same energies as the C version, and CI checks that the outputs match.
 
-How the backend works:
-
-- A unit is stored as a map from base-unit name to an integer exponent (`kg*m/s^2` =
-  `{kg:1, m:1, s:-2}`). Multiplying units adds exponents and dividing subtracts them; an exponent
-  that reaches zero is dropped. Aliases are expanded at declaration, so `N` and `kg*m/s^2` are the
-  same type.
-- Locals live in `alloca`s in the entry block, so LLVM's `mem2reg` promotes them to SSA registers.
-- Arrays lower to an `{ ptr, i64 }` fat pointer. The element storage is `malloc`ed.
-- Each runtime check branches to a cold `panic` block (marked with branch weights) that calls
-  `dprintf(2, …)` and `exit(101)`, so the hot path stays a single compare and branch.
-- `&&` and `||` are lowered to branches with a `phi`, which gives true short-circuit evaluation.
-- User functions get a `nova.` prefix and internal linkage, so a NovaLang function can be called
-  `printf` or `main` without clashing with libc. A generated C `main` calls `nova.main`.
+[docs/DESIGN.md](docs/DESIGN.md) explains what these numbers mean, including the two LLVM
+pipeline bugs the benchmarks exposed.
 
 ## Tests
 
-`tests/cases/` holds 289 test programs covering:
-
-- literals, type inference, operators, casts, scoping and control flow
-- functions and recursion
-- units of measure (derivation, aliases, cancellation, and every unit error)
-- arrays, the pipeline operator and compound assignment
-- runtime panics and their source locations
-- every compile-time diagnostic
-
-Each file states what it expects in comments:
-
-```nova
-// expect: 10.4384 m/s
-// runtime-error: index 3 out of bounds for array of length 3
-// error: operator '+' cannot be applied to float<m> and float<s>
-```
-
-Run the suite:
-
 ```bash
-python3 tests/run_tests.py build/novac tests/cases
-NOVAC_FLAGS=-O2 python3 tests/run_tests.py build/novac tests/cases   # with optimizations
-# or: cd build && ctest --output-on-failure
+python3 tests/run_tests.py build/novac tests/cases                    # AOT, -O0
+NOVAC_FLAGS=-O2 python3 tests/run_tests.py build/novac tests/cases    # AOT, -O2
+NOVAC_MODE=jit python3 tests/run_tests.py build/novac tests/cases     # JIT
 ```
 
-On every push and pull request, CI (`.github/workflows/ci.yml`) builds the compiler, runs the
-whole suite at `-O0` and at `-O2`, and compiles and runs every example.
+Each test program states what it expects in comments: `// expect:` for output, `// error:` for
+compile errors, `// runtime-error:` for runtime errors, and `// stats:` for check counts.

@@ -1,0 +1,8 @@
+// expect: 2
+struct Leaf { v: int }
+struct Tree { value: int, children: [Leaf] }
+fn main() -> int {
+    let t = Tree(value: 1, children: [Leaf(v: 2); 2]);
+    print(len(t.children));
+    return 0;
+}

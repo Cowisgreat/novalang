@@ -1,0 +1,9 @@
+// expect: 5
+// stats: bounds checks:   1 emitted, 0 elided
+fn main() -> int {
+    let a = [1, 2, 3];
+    var s = 0;
+    for i in 0..len(a) - 1 { s += a[i + 1]; }
+    print(s);
+    return 0;
+}

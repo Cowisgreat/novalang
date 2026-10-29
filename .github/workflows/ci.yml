@@ -13,7 +13,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y llvm-18-dev flex bison cmake
+          sudo apt-get install -y llvm-18-dev clang-18 flex bison cmake
 
       - name: Configure
         run: cmake -S . -B build -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm
@@ -21,15 +21,32 @@ jobs:
       - name: Build
         run: cmake --build build -j
 
-      - name: Run language tests (-O0)
+      # The same suite runs four ways: ahead-of-time and JIT, unoptimized and optimized.
+      # Every program must behave identically in all of them.
+      - name: Tests (AOT, -O0)
         run: python3 tests/run_tests.py build/novac tests/cases
 
-      - name: Run language tests (-O2)
+      - name: Tests (AOT, -O2)
         run: NOVAC_FLAGS=-O2 python3 tests/run_tests.py build/novac tests/cases
 
-      - name: Compile examples
+      - name: Tests (JIT, -O0)
+        run: NOVAC_MODE=jit python3 tests/run_tests.py build/novac tests/cases
+
+      - name: Tests (JIT, -O2)
+        run: NOVAC_MODE=jit NOVAC_FLAGS=-O2 python3 tests/run_tests.py build/novac tests/cases
+
+      - name: Run examples
         run: |
           for f in examples/*.nov; do
-            ./build/novac "$f" -O2 -o "build/$(basename "$f" .nov).out"
-            "./build/$(basename "$f" .nov).out"
+            echo "== $f"
+            ./build/novac "$f" -O2 --run
+          done
+
+      - name: Benchmarks agree with C
+        run: |
+          for b in nbody sum pairs; do
+            clang-18 -O2 "bench/$b.c" -o "build/$b.c.out" -lm
+            ./build/novac "bench/$b.nov" -O2 -o "build/$b.nova.out"
+            # NovaLang prints units ("-0.169075 au^2/yr^2"); compare the numbers only.
+            diff <("build/$b.c.out") <("build/$b.nova.out" | cut -d' ' -f1)
           done

@@ -1,0 +1,8 @@
+// error: argument 1 of 'sqrt' expects float<'u^2>, got float<m> (m has no exact square root)
+unit m;
+unit s;
+unit kg;
+fn main() -> int {
+    print(sqrt(9.0<m>));
+    return 0;
+}

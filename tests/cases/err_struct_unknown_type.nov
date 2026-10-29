@@ -1,0 +1,6 @@
+// error: unknown type 'Ghost'
+unit m;
+unit s;
+unit kg;
+fn f(p: Ghost) {}
+fn main() {}
